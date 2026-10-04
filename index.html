@@ -1,0 +1,3945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire Survivor - Survive!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #1a1a2e;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .stat-box {
+            color: white;
+            text-shadow: 2px 2px 4px black;
+        }
+        
+        .stat-box .label {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        #hpBar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #555;
+            z-index: 100;
+        }
+        
+        #hpFill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0044, #ff4466);
+            transition: width 0.2s;
+            box-shadow: 0 0 10px #ff0044;
+        }
+        
+        #expBar {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 100;
+        }
+        
+        #expFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ffcc);
+            transition: width 0.1s;
+            box-shadow: 0 0 10px #00ff88;
+        }
+        
+        #levelUpScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 200;
+        }
+        
+        #levelUpScreen h1 {
+            color: #ffd700;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ffd700;
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        
+        .weapon-choice {
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+            border: 2px solid #4a4a8a;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .weapon-choice:hover {
+            transform: scale(1.05);
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+        }
+        
+        .weapon-choice .icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        
+        .weapon-choice .name {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .weapon-choice .desc {
+            color: #aaa;
+            font-size: 12px;
+        }
+        
+        .weapon-choice .level {
+            color: #ffd700;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 300;
+        }
+        
+        #startScreen h1 {
+            font-size: 64px;
+            color: #ff0044;
+            text-shadow: 0 0 30px #ff0044, 0 0 60px #ff0044;
+            margin-bottom: 20px;
+        }
+        
+        #startScreen p {
+            color: #aaa;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        
+        #startBtn {
+            background: linear-gradient(135deg, #ff0044 0%, #cc0033 100%);
+            border: none;
+            color: white;
+            font-size: 28px;
+            padding: 20px 60px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #startBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ff0044;
+        }
+        
+        .controls {
+            color: #666;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .controls kbd {
+            background: #333;
+            padding: 5px 12px;
+            border-radius: 5px;
+            margin: 0 3px;
+            color: white;
+        }
+        
+        #gameOverScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 300;
+        }
+        
+        #gameOverScreen h1 {
+            font-size: 72px;
+            color: #ff0044;
+            text-shadow: 0 0 30px #ff0044;
+            margin-bottom: 20px;
+        }
+        
+        #finalStats {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        #restartBtn {
+            background: linear-gradient(135deg, #4444ff 0%, #2222cc 100%);
+            border: none;
+            color: white;
+            font-size: 24px;
+            padding: 15px 50px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #restartBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #4444ff;
+        }
+        
+        #weaponIcons {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+        
+        .weapon-icon {
+            width: 45px;
+            height: 45px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #444;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            position: relative;
+        }
+        
+        .weapon-icon .weapon-level {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: #ffd700;
+            color: black;
+            font-size: 10px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #timer {
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        #bossWarning {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,0,0,0.2);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 150;
+            pointer-events: none;
+            animation: bossFlash 0.3s infinite;
+        }
+        
+        @keyframes bossFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        #bossWarning h1 {
+            color: #ff0000;
+            font-size: 72px;
+            text-shadow: 0 0 30px #ff0000;
+        }
+        
+        #pauseScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 250;
+        }
+        
+        #pauseScreen h1 {
+            font-size: 72px;
+            color: #ffffff;
+            text-shadow: 0 0 30px #ffffff;
+            margin-bottom: 30px;
+        }
+        
+        #pauseScreen p {
+            color: #aaa;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        #resumeBtn {
+            background: linear-gradient(135deg, #44aa44 0%, #228822 100%);
+            border: none;
+            color: white;
+            font-size: 24px;
+            padding: 15px 50px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+        
+        #resumeBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #44aa44;
+        }
+        
+        #weaponListScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 260;
+            overflow-y: auto;
+            padding: 40px;
+        }
+        
+        #weaponListScreen h1 {
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700;
+            margin-bottom: 30px;
+        }
+        
+        #weaponListScreen .close-hint {
+            color: #888;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        #weaponGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .weapon-list-item {
+            background: linear-gradient(135deg, #1a1a3a 0%, #0a0a2a 100%);
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .weapon-list-item.owned {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+        }
+        
+        .weapon-list-item .w-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .weapon-list-item .w-info {
+            flex: 1;
+        }
+        
+        .weapon-list-item .w-name {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .weapon-list-item .w-desc {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .weapon-list-item .w-level {
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        #buffIndicator {
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+        
+        .buff-item {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .buff-item .buff-time {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .lang-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .lang-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #555;
+            color: #aaa;
+            padding: 10px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .lang-btn:hover {
+            border-color: #888;
+            color: #fff;
+        }
+        
+        .lang-btn.active {
+            background: rgba(255,215,0,0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        .pause-lang-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .pause-lang-btn {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #444;
+            color: #888;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .pause-lang-btn:hover {
+            border-color: #666;
+            color: #ccc;
+        }
+        
+        .pause-lang-btn.active {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        .mode-buttons {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        #challengeBtn {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+            border: none;
+            color: #000;
+            font-size: 28px;
+            padding: 20px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            text-shadow: none;
+        }
+        
+        #challengeBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ffd700;
+        }
+        
+        #challengeSelectScreen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1a0a2e 0%, #0a1a3e 50%, #2a1a1a 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 300;
+            padding: 40px;
+        }
+        
+        #challengeSelectScreen h1 {
+            font-size: 56px;
+            color: #ffd700;
+            text-shadow: 0 0 30px #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        #challengeList {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .challenge-item {
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+            border: 3px solid #555;
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .challenge-item:hover {
+            transform: scale(1.02);
+            border-color: #ffd700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .challenge-icon {
+            font-size: 48px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,215,0,0.1);
+            border-radius: 15px;
+        }
+        
+        .challenge-info {
+            flex: 1;
+        }
+        
+        .challenge-name {
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .challenge-desc {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .challenge-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        #challengeBackBtn {
+            margin-top: 30px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #666;
+            color: #aaa;
+            font-size: 18px;
+            padding: 12px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #challengeBackBtn:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+        
+        #challengeClearScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 400;
+        }
+        
+        .clear-content {
+            text-align: center;
+            animation: clearPulse 0.5s ease-out;
+        }
+        
+        @keyframes clearPulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        #challengeClearTitle {
+            font-size: 64px;
+            color: #ffd700;
+            text-shadow: 0 0 50px #ffd700, 0 0 100px #ff8800;
+            margin-bottom: 30px;
+            animation: rainbow 2s infinite;
+        }
+        
+        @keyframes rainbow {
+            0% { color: #ffd700; }
+            25% { color: #ff8800; }
+            50% { color: #ff4488; }
+            75% { color: #8844ff; }
+            100% { color: #ffd700; }
+        }
+        
+        #clearStats {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+        
+        #clearRestartBtn {
+            background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%);
+            border: none;
+            color: #000;
+            font-size: 24px;
+            padding: 15px 50px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        
+        #clearRestartBtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px #ffd700;
+        }
+        
+        #challengeProgress {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 15px 20px;
+            z-index: 100;
+            display: none;
+        }
+        
+        #challengeProgress .title {
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        #challengeProgress .progress {
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        #challengeProgress .progress-bar {
+            width: 150px;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        #challengeProgress .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ff8800);
+            transition: width 0.3s;
+        }
+
+        /* ==================== 모바일 / 터치 대응 ==================== */
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            overscroll-behavior: none;
+        }
+
+        #gameCanvas {
+            width: 100vw;
+            height: 100dvh;
+            touch-action: none;
+        }
+
+        button, .weapon-choice, .challenge-item {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        #mobileControls {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            pointer-events: none;
+        }
+
+        #joystick {
+            position: absolute;
+            left: max(18px, env(safe-area-inset-left));
+            bottom: max(18px, env(safe-area-inset-bottom));
+            width: 132px;
+            height: 132px;
+            border: 2px solid rgba(255,255,255,0.24);
+            border-radius: 50%;
+            background: rgba(0,0,0,0.24);
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.06), 0 0 25px rgba(0,0,0,0.35);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystickKnob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 58px;
+            height: 58px;
+            margin: -29px 0 0 -29px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.55);
+            background: rgba(255,0,68,0.58);
+            box-shadow: 0 0 18px rgba(255,0,68,0.35);
+            transform: translate3d(0,0,0);
+            transition: transform 0.05s linear;
+        }
+
+        #joystickLabel {
+            position: absolute;
+            width: 100%;
+            bottom: -24px;
+            left: 0;
+            text-align: center;
+            color: rgba(255,255,255,0.55);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .mobile-actions {
+            position: absolute;
+            right: max(18px, env(safe-area-inset-right));
+            bottom: max(18px, env(safe-area-inset-bottom));
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .mobile-action-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.25);
+            background: rgba(0,0,0,0.56);
+            color: #fff;
+            font-size: 23px;
+            font-weight: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 18px rgba(0,0,0,0.35);
+        }
+
+        .mobile-action-btn:active {
+            transform: scale(0.94);
+            border-color: #ffd700;
+            background: rgba(255,215,0,0.18);
+        }
+
+        #mobileHint {
+            position: absolute;
+            left: 50%;
+            bottom: max(12px, env(safe-area-inset-bottom));
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.32);
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        #mobileWeaponClose {
+            display: none;
+            position: fixed;
+            right: max(14px, env(safe-area-inset-right));
+            top: max(14px, env(safe-area-inset-top));
+            z-index: 310;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #666;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 22px;
+            font-weight: 800;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 700px), (pointer: coarse) {
+            #mobileControls {
+                display: block;
+            }
+
+            #mobileWeaponClose {
+                display: block;
+            }
+
+            #ui {
+                padding:
+                    max(7px, env(safe-area-inset-top))
+                    max(10px, env(safe-area-inset-right))
+                    6px
+                    max(10px, env(safe-area-inset-left));
+            }
+
+            .stat-box .label {
+                font-size: 10px;
+            }
+
+            .stat-box .value {
+                font-size: 20px;
+            }
+
+            #timer {
+                font-size: 24px;
+            }
+
+            #expBar {
+                top: 51px;
+                width: min(54vw, 300px);
+                height: 7px;
+            }
+
+            #hpBar {
+                bottom: max(10px, env(safe-area-inset-bottom));
+                width: min(52vw, 280px);
+                height: 16px;
+            }
+
+            #weaponIcons {
+                left: max(8px, env(safe-area-inset-left));
+                top: 82px;
+                transform: none;
+                gap: 6px;
+                max-height: 34vh;
+                overflow: hidden;
+                flex-wrap: wrap;
+                align-content: flex-start;
+                width: min(46vw, 180px);
+                flex-direction: row;
+            }
+
+            .weapon-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 9px;
+                font-size: 17px !important;
+            }
+
+            .weapon-icon .weapon-level {
+                width: 16px;
+                height: 16px;
+                font-size: 9px;
+            }
+
+            #buffIndicator {
+                top: 84px;
+                right: max(8px, env(safe-area-inset-right));
+                gap: 5px;
+            }
+
+            .buff-item {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+
+            .buff-item .buff-time {
+                font-size: 10px;
+            }
+
+            #challengeProgress {
+                top: 84px;
+                right: 8px;
+                padding: 8px 10px;
+                border-radius: 10px;
+            }
+
+            #challengeProgress .title {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+
+            #challengeProgress .progress {
+                font-size: 16px;
+            }
+
+            #challengeProgress .progress-bar {
+                width: 110px;
+                height: 6px;
+            }
+
+            #startScreen,
+            #challengeSelectScreen,
+            #gameOverScreen,
+            #pauseScreen,
+            #levelUpScreen {
+                padding:
+                    max(18px, env(safe-area-inset-top))
+                    max(14px, env(safe-area-inset-right))
+                    max(18px, env(safe-area-inset-bottom))
+                    max(14px, env(safe-area-inset-left));
+                overflow-y: auto;
+            }
+
+            #startScreen h1 {
+                font-size: clamp(32px, 10vw, 50px);
+                text-align: center;
+                margin-bottom: 12px;
+                line-height: 1.05;
+            }
+
+            #startScreen p {
+                font-size: 14px;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+
+            .lang-selector {
+                gap: 6px;
+                margin-bottom: 18px;
+            }
+
+            .lang-btn {
+                min-width: 104px;
+                padding: 9px 13px;
+                font-size: 14px;
+            }
+
+            .mode-buttons {
+                width: min(92vw, 360px);
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            #startBtn,
+            #challengeBtn {
+                width: 100%;
+                font-size: 22px;
+                padding: 15px 20px;
+            }
+
+            .controls {
+                width: min(92vw, 360px);
+                margin-top: 18px;
+                font-size: 11px;
+                line-height: 1.45;
+            }
+
+            .controls kbd {
+                padding: 3px 7px;
+                margin: 0 1px;
+            }
+
+            #levelUpScreen {
+                justify-content: flex-start;
+                padding-top: max(54px, env(safe-area-inset-top));
+            }
+
+            #levelUpScreen h1 {
+                font-size: 38px;
+                margin-bottom: 10px;
+            }
+
+            #levelUpScreen p {
+                margin-bottom: 10px !important;
+                font-size: 13px;
+            }
+
+            #weaponChoices {
+                width: 100%;
+                max-width: 560px !important;
+                padding-bottom: 20px;
+            }
+
+            .weapon-choice {
+                width: min(44vw, 250px);
+                min-width: 0;
+                margin: 5px;
+                padding: 14px 10px;
+                border-radius: 13px;
+            }
+
+            .weapon-choice .icon {
+                font-size: 28px;
+                margin-bottom: 6px;
+            }
+
+            .weapon-choice .name {
+                font-size: 15px;
+            }
+
+            .weapon-choice .desc {
+                font-size: 11px;
+                line-height: 1.35;
+            }
+
+            .weapon-choice .level {
+                font-size: 11px;
+            }
+
+            #challengeSelectScreen {
+                justify-content: flex-start;
+                padding-top: max(32px, env(safe-area-inset-top));
+            }
+
+            #challengeSelectScreen h1 {
+                font-size: clamp(28px, 8vw, 42px);
+                text-align: center;
+            }
+
+            #challengeSelectDesc {
+                margin-bottom: 16px !important;
+            }
+
+            #challengeList {
+                max-width: 560px;
+            }
+
+            .challenge-item {
+                padding: 15px;
+                gap: 12px;
+                border-radius: 16px;
+            }
+
+            .challenge-icon {
+                width: 52px;
+                height: 52px;
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+
+            .challenge-name {
+                font-size: 18px;
+            }
+
+            .challenge-desc {
+                font-size: 11px;
+            }
+
+            .challenge-badge {
+                padding: 5px 9px;
+                font-size: 10px;
+                flex-shrink: 0;
+            }
+
+            #challengeBackBtn {
+                margin-top: 18px;
+                font-size: 16px;
+                padding: 10px 34px;
+            }
+
+            #pauseScreen h1 {
+                font-size: 54px;
+            }
+
+            #pauseScreen p {
+                font-size: 15px;
+                text-align: center;
+            }
+
+            #resumeBtn {
+                font-size: 21px;
+                padding: 13px 42px;
+            }
+
+            #weaponListScreen {
+                padding:
+                    max(22px, env(safe-area-inset-top))
+                    max(10px, env(safe-area-inset-right))
+                    max(22px, env(safe-area-inset-bottom))
+                    max(10px, env(safe-area-inset-left));
+            }
+
+            #weaponListScreen h1 {
+                font-size: 34px;
+                margin-bottom: 8px;
+            }
+
+            #weaponListScreen .close-hint {
+                font-size: 11px;
+                margin-bottom: 10px;
+                padding-right: 45px;
+            }
+
+            #weaponGrid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                max-height: 78vh;
+                padding: 4px;
+            }
+
+            .weapon-list-item {
+                padding: 9px;
+                gap: 10px;
+                border-radius: 10px;
+            }
+
+            .weapon-list-item .w-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 22px;
+            }
+
+            .weapon-list-item .w-name {
+                font-size: 14px;
+            }
+
+            .weapon-list-item .w-desc {
+                font-size: 10px;
+            }
+
+            .weapon-list-item .w-level {
+                font-size: 12px;
+            }
+
+            #gameOverScreen h1 {
+                font-size: 50px;
+                text-align: center;
+            }
+
+            #finalStats {
+                font-size: 17px;
+                line-height: 1.7;
+            }
+
+            #restartBtn,
+            #clearRestartBtn {
+                font-size: 20px;
+                padding: 13px 38px;
+            }
+
+            #challengeClearTitle {
+                font-size: clamp(36px, 11vw, 58px);
+                text-align: center;
+            }
+
+            #clearStats {
+                font-size: 18px;
+            }
+
+            #mobileHint {
+                display: block;
+            }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            #joystick {
+                width: 112px;
+                height: 112px;
+            }
+
+            #joystickKnob {
+                width: 50px;
+                height: 50px;
+                margin: -25px 0 0 -25px;
+            }
+
+            .mobile-action-btn {
+                width: 52px;
+                height: 52px;
+            }
+
+            #mobileHint {
+                display: none;
+            }
+
+            #weaponIcons {
+                top: 70px;
+                max-height: 30vh;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- 모바일 터치 조작 -->
+    <div id="mobileControls" aria-hidden="true">
+        <div id="joystick">
+            <div id="joystickKnob"></div>
+            <div id="joystickLabel">MOVE</div>
+        </div>
+        <div class="mobile-actions">
+            <button id="mobilePause" class="mobile-action-btn" type="button" aria-label="Pause">Ⅱ</button>
+            <button id="mobileWeapons" class="mobile-action-btn" type="button" aria-label="Weapons">⚔</button>
+        </div>
+        <div id="mobileHint">왼쪽 스틱으로 이동 · 오른쪽 버튼으로 일시정지/무기목록</div>
+    </div>
+
+    
+    <div id="ui">
+        <div class="stat-box">
+            <div class="label" id="labelLevel">LEVEL</div>
+            <div class="value" id="levelDisplay">1</div>
+        </div>
+        <div id="timer">00:00</div>
+        <div class="stat-box" style="text-align: right;">
+            <div class="label" id="labelKills">KILLS</div>
+            <div class="value" id="killDisplay">0</div>
+        </div>
+    </div>
+    
+    <div id="expBar">
+        <div id="expFill" style="width: 0%"></div>
+    </div>
+    
+    <div id="hpBar">
+        <div id="hpFill" style="width: 100%"></div>
+    </div>
+    
+    <div id="weaponIcons"></div>
+    <div id="buffIndicator"></div>
+    
+    <div id="challengeProgress">
+        <div class="title" id="challengeProgressTitle">CHALLENGE</div>
+        <div class="progress"><span id="challengeWeaponCount">0</span> / 15</div>
+        <div class="progress-bar"><div class="progress-fill" id="challengeProgressFill" style="width: 0%"></div></div>
+    </div>
+    
+    <div id="bossWarning">
+        <h1 id="bossWarningText">!! BOSS INCOMING !!</h1>
+    </div>
+    
+    <div id="pauseScreen">
+        <h1 id="pauseTitle">PAUSED</h1>
+        <p id="pauseHint1">Press ESC or P to resume</p>
+        <p id="pauseHint2" style="color: #666;">Press TAB to view all weapons</p>
+        <button id="resumeBtn">RESUME</button>
+        <div class="pause-lang-selector">
+            <button class="pause-lang-btn" onclick="setLanguage('ko')">한국어</button>
+            <button class="pause-lang-btn" onclick="setLanguage('en')">English</button>
+        </div>
+    </div>
+    
+    <div id="weaponListScreen">
+        <button id="mobileWeaponClose" type="button" aria-label="Close weapons">×</button>
+        <h1 id="weaponListTitle">ALL WEAPONS</h1>
+        <p class="close-hint" id="weaponListHint">Press TAB or ESC to close</p>
+        <div id="weaponGrid"></div>
+    </div>
+    
+    <div id="levelUpScreen">
+        <h1 id="levelUpTitle">LEVEL UP!</h1>
+        <p id="levelUpHint" style="color: #aaa; margin-bottom: 20px;">Select a weapon</p>
+        <div id="weaponChoices" style="display: flex; flex-wrap: wrap; justify-content: center; max-width: 900px;"></div>
+    </div>
+    
+    <div id="startScreen">
+        <div class="lang-selector">
+            <button class="lang-btn" onclick="setLanguage('ko')">한국어</button>
+            <button class="lang-btn" onclick="setLanguage('en')">English</button>
+        </div>
+        <h1 id="gameTitle">VAMPIRE SURVIVOR</h1>
+        <p id="gameSubtitle">Survive against endless waves of monsters!</p>
+        <div class="mode-buttons">
+            <button id="startBtn">START GAME</button>
+            <button id="challengeBtn">CHALLENGE MODE</button>
+        </div>
+        <div class="controls">
+            <p id="controlHint1"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow Keys to move</p>
+            <p id="controlHint2" style="margin-top: 10px;"><kbd>ESC</kbd> or <kbd>P</kbd> Pause | <kbd>TAB</kbd> Weapon List</p>
+            <p id="controlHint3" style="margin-top: 10px;">All attacks auto-aim at the nearest enemy!</p>
+        </div>
+    </div>
+    
+    <div id="challengeSelectScreen">
+        <h1 id="challengeSelectTitle">🏆 CHALLENGE MODE 🏆</h1>
+        <p id="challengeSelectDesc" style="color: #aaa; margin-bottom: 30px;">Select a challenge!</p>
+        <div id="challengeList">
+            <div class="challenge-item" onclick="startChallenge('allWeapons')">
+                <div class="challenge-icon">⚔️</div>
+                <div class="challenge-info">
+                    <div class="challenge-name" id="challengeAllWeaponsName">All Weapons Master</div>
+                    <div class="challenge-desc" id="challengeAllWeaponsDesc">Collect all 15 weapons to win! Each level up gives +10 levels.</div>
+                </div>
+                <div class="challenge-badge">15 weapons</div>
+            </div>
+            <div class="challenge-item" onclick="startChallenge('knifeOnly')">
+                <div class="challenge-icon">🗡️</div>
+                <div class="challenge-info">
+                    <div class="challenge-name" id="challengeKnifeOnlyName">Knife Only</div>
+                    <div class="challenge-desc" id="challengeKnifeOnlyDesc">Only knife! Level up to upgrade knife or heal 10% HP.</div>
+                </div>
+                <div class="challenge-badge">LV.100</div>
+            </div>
+        </div>
+        <button id="challengeBackBtn" onclick="closeChallengeSelect()">BACK</button>
+    </div>
+    
+    <div id="challengeClearScreen">
+        <div class="clear-content">
+            <h1 id="challengeClearTitle">🎉 CHALLENGE CLEAR! 🎉</h1>
+            <div id="clearStats"></div>
+            <button id="clearRestartBtn" onclick="restartFromClear()">BACK TO TITLE</button>
+        </div>
+    </div>
+    
+    <div id="gameOverScreen">
+        <h1 id="gameOverTitle">GAME OVER</h1>
+        <div id="finalStats"></div>
+        <button id="restartBtn">RESTART</button>
+    </div>
+    
+    <script>
+        // ==================== 언어 설정 ====================
+        let currentLang = localStorage.getItem('gameLang') || 'ko';
+        
+        const translations = {
+            ko: {
+                // UI
+                level: '레벨',
+                kills: '처치',
+                
+                // Start Screen
+                gameTitle: '뱀파이어 서바이버',
+                gameSubtitle: '끝없는 몬스터 웨이브에서 살아남아라!',
+                startBtn: '게임 시작',
+                controlHint1: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 또는 방향키로 이동',
+                controlHint2: '<kbd>ESC</kbd> 또는 <kbd>P</kbd> 일시정지 | <kbd>TAB</kbd> 무기 목록',
+                controlHint3: '모든 공격은 가장 가까운 적을 자동 조준!',
+                
+                // Pause Screen
+                pauseTitle: '일시정지',
+                pauseHint1: 'ESC 또는 P를 눌러 재개',
+                pauseHint2: 'TAB을 눌러 무기 목록 보기',
+                resumeBtn: '계속하기',
+                
+                // Weapon List
+                weaponListTitle: '전체 무기 목록',
+                weaponListHint: 'TAB 또는 ESC를 눌러 닫기',
+                
+                // Level Up
+                levelUpTitle: '레벨 업!',
+                levelUpHint: '무기를 선택하세요',
+                newWeapon: '★ 신규! ★',
+                
+                // Boss
+                bossWarning: '!! 보스 출현 !!',
+                
+                // Game Over
+                gameOverTitle: '게임 오버',
+                restartBtn: '다시 시작',
+                timeSurvived: '생존 시간',
+                finalLevel: '최종 레벨',
+                weapons: '무기 수',
+                
+                // Items
+                magnetText: '자석 30초!',
+                
+                // Weapons
+                weapons_data: {
+                    knife: { name: '투척 단검', desc: '가까운 적에게 단검 투척' },
+                    fireball: { name: '화염구', desc: '적에게 폭발하는 화염구' },
+                    lightning: { name: '번개', desc: '가까운 적에게 벼락' },
+                    aura: { name: '신성 오라', desc: '주변 적에게 지속 피해' },
+                    orbit: { name: '회전 구체', desc: '주변을 도는 구체' },
+                    explosion: { name: '폭발', desc: '적 위치에 폭발' },
+                    freeze: { name: '냉기 오라', desc: '적을 느리게 + 피해' },
+                    laser: { name: '레이저 빔', desc: '관통 레이저' },
+                    poison: { name: '맹독', desc: '적에게 지속 피해' },
+                    boomerang: { name: '부메랑', desc: '돌아오는 무기' },
+                    missile: { name: '유도 미사일', desc: '적을 추적하는 미사일' },
+                    shuriken: { name: '수리검', desc: '빠른 연사 수리검' },
+                    blackhole: { name: '블랙홀', desc: '적을 끌어당김' },
+                    chainLightning: { name: '체인 라이트닝', desc: '적 사이로 튕기는 번개' },
+                    holyBeam: { name: '신성 광선', desc: '초고속 연사 광선' }
+                },
+                
+                // Challenge
+                challengeMode: '챌린지 모드',
+                challengeSelectTitle: '🏆 챌린지 모드 🏆',
+                challengeSelectDesc: '챌린지를 선택하세요!',
+                challengeAllWeaponsName: '무기 마스터',
+                challengeAllWeaponsDesc: '15개 무기를 모두 획득하면 승리! 레벨업 시 최대 레벨로 상승.',
+                challengeKnifeOnlyName: '단검 승부',
+                challengeKnifeOnlyDesc: '오직 단검만! 레벨업 시 단검 강화 또는 체력 10% 회복.',
+                challengeBack: '뒤로',
+                challengeProgressTitle: '챌린지',
+                challengeClearTitle: '🎉 챌린지 클리어! 🎉',
+                clearTime: '클리어 시간',
+                clearKills: '처치 수',
+                backToTitle: '타이틀로'
+            },
+            en: {
+                // UI
+                level: 'LEVEL',
+                kills: 'KILLS',
+                
+                // Start Screen
+                gameTitle: 'VAMPIRE SURVIVOR',
+                gameSubtitle: 'Survive against endless waves of monsters!',
+                startBtn: 'START GAME',
+                controlHint1: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or Arrow Keys to move',
+                controlHint2: '<kbd>ESC</kbd> or <kbd>P</kbd> Pause | <kbd>TAB</kbd> Weapon List',
+                controlHint3: 'All attacks auto-aim at the nearest enemy!',
+                
+                // Pause Screen
+                pauseTitle: 'PAUSED',
+                pauseHint1: 'Press ESC or P to resume',
+                pauseHint2: 'Press TAB to view all weapons',
+                resumeBtn: 'RESUME',
+                
+                // Weapon List
+                weaponListTitle: 'ALL WEAPONS',
+                weaponListHint: 'Press TAB or ESC to close',
+                
+                // Level Up
+                levelUpTitle: 'LEVEL UP!',
+                levelUpHint: 'Select a weapon',
+                newWeapon: '★ NEW! ★',
+                
+                // Boss
+                bossWarning: '!! BOSS INCOMING !!',
+                
+                // Game Over
+                gameOverTitle: 'GAME OVER',
+                restartBtn: 'RESTART',
+                timeSurvived: 'Time Survived',
+                finalLevel: 'Final Level',
+                weapons: 'Weapons',
+                
+                // Items
+                magnetText: 'MAGNET 30s!',
+                
+                // Weapons
+                weapons_data: {
+                    knife: { name: 'Throwing Knife', desc: 'Throws knives at nearest enemies' },
+                    fireball: { name: 'Fireball', desc: 'Exploding fireballs at enemies' },
+                    lightning: { name: 'Lightning', desc: 'Strikes lightning at nearest enemies' },
+                    aura: { name: 'Holy Aura', desc: 'Damages all nearby enemies' },
+                    orbit: { name: 'Orbit Spheres', desc: 'Spheres that orbit around you' },
+                    explosion: { name: 'Explosion', desc: 'Explosions at nearest enemy locations' },
+                    freeze: { name: 'Freeze Aura', desc: 'Slows and damages nearby enemies' },
+                    laser: { name: 'Laser Beam', desc: 'Piercing laser towards nearest enemy' },
+                    poison: { name: 'Poison', desc: 'Poisons enemies for damage over time' },
+                    boomerang: { name: 'Boomerang', desc: 'Returns after hitting enemies' },
+                    missile: { name: 'Homing Missile', desc: 'Missiles that track enemies' },
+                    shuriken: { name: 'Shuriken', desc: 'Fast throwing stars at enemies' },
+                    blackhole: { name: 'Black Hole', desc: 'Pulls in and damages enemies' },
+                    chainLightning: { name: 'Chain Lightning', desc: 'Lightning that bounces between enemies' },
+                    holyBeam: { name: 'Holy Beam', desc: 'Continuous beam at nearest enemy' }
+                },
+                
+                // Challenge
+                challengeMode: 'CHALLENGE MODE',
+                challengeSelectTitle: '🏆 CHALLENGE MODE 🏆',
+                challengeSelectDesc: 'Select a challenge!',
+                challengeAllWeaponsName: 'All Weapons Master',
+                challengeAllWeaponsDesc: 'Collect all 15 weapons to win! Each weapon goes to max level.',
+                challengeKnifeOnlyName: 'Knife Only',
+                challengeKnifeOnlyDesc: 'Only knife! Level up to upgrade knife or heal 10% HP.',
+                challengeBack: 'BACK',
+                challengeProgressTitle: 'CHALLENGE',
+                challengeClearTitle: '🎉 CHALLENGE CLEAR! 🎉',
+                clearTime: 'Clear Time',
+                clearKills: 'Kills',
+                backToTitle: 'BACK TO TITLE'
+            }
+        };
+        
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('gameLang', lang);
+            updateAllTexts();
+            updateLangButtons();
+        }
+        
+        function t(key) {
+            return translations[currentLang][key] || translations['en'][key] || key;
+        }
+        
+        function getWeaponText(weaponKey) {
+            return translations[currentLang].weapons_data[weaponKey] || translations['en'].weapons_data[weaponKey];
+        }
+        
+        function updateLangButtons() {
+            document.querySelectorAll('.lang-btn, .pause-lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === '한국어' && currentLang === 'ko') btn.classList.add('active');
+                if (btn.textContent === 'English' && currentLang === 'en') btn.classList.add('active');
+            });
+        }
+        
+        function updateAllTexts() {
+            // UI Labels
+            document.getElementById('labelLevel').textContent = t('level');
+            document.getElementById('labelKills').textContent = t('kills');
+            
+            // Start Screen
+            document.getElementById('gameTitle').textContent = t('gameTitle');
+            document.getElementById('gameSubtitle').textContent = t('gameSubtitle');
+            document.getElementById('startBtn').textContent = t('startBtn');
+            document.getElementById('challengeBtn').textContent = t('challengeMode');
+            document.getElementById('controlHint1').innerHTML = t('controlHint1');
+            document.getElementById('controlHint2').innerHTML = t('controlHint2');
+            document.getElementById('controlHint3').textContent = t('controlHint3');
+            
+            // Pause Screen
+            document.getElementById('pauseTitle').textContent = t('pauseTitle');
+            document.getElementById('pauseHint1').textContent = t('pauseHint1');
+            document.getElementById('pauseHint2').textContent = t('pauseHint2');
+            document.getElementById('resumeBtn').textContent = t('resumeBtn');
+            
+            // Weapon List
+            document.getElementById('weaponListTitle').textContent = t('weaponListTitle');
+            document.getElementById('weaponListHint').textContent = t('weaponListHint');
+            
+            // Level Up
+            document.getElementById('levelUpTitle').textContent = t('levelUpTitle');
+            document.getElementById('levelUpHint').textContent = t('levelUpHint');
+            
+            // Boss Warning
+            document.getElementById('bossWarningText').textContent = t('bossWarning');
+            
+            // Game Over
+            document.getElementById('gameOverTitle').textContent = t('gameOverTitle');
+            document.getElementById('restartBtn').textContent = t('restartBtn');
+            
+            // Challenge
+            document.getElementById('challengeSelectTitle').textContent = t('challengeSelectTitle');
+            document.getElementById('challengeSelectDesc').textContent = t('challengeSelectDesc');
+            document.getElementById('challengeAllWeaponsName').textContent = t('challengeAllWeaponsName');
+            document.getElementById('challengeAllWeaponsDesc').textContent = t('challengeAllWeaponsDesc');
+            document.getElementById('challengeKnifeOnlyName').textContent = t('challengeKnifeOnlyName');
+            document.getElementById('challengeKnifeOnlyDesc').textContent = t('challengeKnifeOnlyDesc');
+            document.getElementById('challengeBackBtn').textContent = t('challengeBack');
+            document.getElementById('challengeProgressTitle').textContent = t('challengeProgressTitle');
+            document.getElementById('challengeClearTitle').textContent = t('challengeClearTitle');
+            document.getElementById('clearRestartBtn').textContent = t('backToTitle');
+        }
+        
+        // Initialize language on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAllTexts();
+            updateLangButtons();
+        });
+        
+        // ==================== 게임 코드 ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Game State
+        const game = {
+            running: false,
+            paused: false,
+            time: 0,
+            kills: 0,
+            screenShake: 0,
+            cameraX: 0,
+            cameraY: 0,
+            challengeMode: null, // null = normal, 'allWeapons' = all weapons challenge
+            challengeComplete: false
+        };
+        
+        // Player
+        const player = {
+            x: 0,
+            y: 0,
+            radius: 20,
+            speed: 200,
+            hp: 100,
+            maxHp: 100,
+            level: 1,
+            exp: 0,
+            expToLevel: 10,
+            invincible: 0,
+            weapons: {},
+            magnetTime: 0,
+            magnetRadius: 150
+        };
+        
+        // 무기 15종류
+        const weaponDefs = {
+            knife: {
+                icon: '🗡️',
+                color: '#aaaaaa',
+                damage: [10, 15, 22, 30, 40, 55, 75, 100],
+                cooldown: [800, 700, 600, 500, 400, 350, 300, 200],
+                count: [1, 2, 2, 3, 3, 4, 5, 8],
+                speed: 500,
+                pierce: [1, 1, 2, 2, 3, 3, 4, 10]
+            },
+            fireball: {
+                icon: '🔥',
+                color: '#ff4400',
+                damage: [15, 25, 35, 50, 70, 95, 130, 200],
+                cooldown: [1200, 1100, 1000, 900, 800, 700, 600, 400],
+                count: [1, 1, 2, 2, 3, 3, 4, 6],
+                speed: 350,
+                radius: [25, 30, 35, 40, 50, 60, 75, 100],
+                explode: true
+            },
+            lightning: {
+                icon: '⚡',
+                color: '#ffff00',
+                damage: [25, 40, 55, 75, 100, 140, 190, 300],
+                cooldown: [1500, 1400, 1300, 1200, 1000, 900, 750, 500],
+                count: [1, 2, 2, 3, 4, 5, 6, 10],
+                radius: [50, 55, 60, 70, 80, 95, 120, 180]
+            },
+            aura: {
+                icon: '✨',
+                color: '#00ffff',
+                damage: [5, 8, 12, 18, 26, 38, 55, 90],
+                cooldown: [400, 350, 300, 250, 200, 150, 100, 50],
+                radius: [80, 95, 110, 130, 155, 185, 220, 300]
+            },
+            orbit: {
+                icon: '🔮',
+                color: '#ff00ff',
+                damage: [12, 18, 26, 38, 52, 72, 100, 150],
+                count: [2, 3, 4, 5, 6, 8, 10, 16],
+                radius: [60, 70, 80, 90, 100, 115, 135, 180],
+                speed: [2.5, 2.8, 3.2, 3.6, 4, 4.5, 5.2, 7]
+            },
+            explosion: {
+                icon: '💥',
+                color: '#ff6600',
+                damage: [40, 60, 85, 115, 155, 210, 290, 450],
+                cooldown: [2500, 2200, 2000, 1800, 1500, 1300, 1000, 600],
+                count: [1, 1, 2, 2, 3, 4, 5, 8],
+                radius: [70, 80, 90, 105, 125, 150, 190, 280]
+            },
+            freeze: {
+                icon: '❄️',
+                color: '#88ccff',
+                slow: [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.65, 0.8],
+                damage: [4, 7, 11, 16, 24, 35, 50, 80],
+                radius: [100, 115, 130, 150, 175, 205, 250, 350]
+            },
+            laser: {
+                icon: '📡',
+                color: '#ff0088',
+                damage: [30, 45, 65, 90, 125, 170, 240, 380],
+                cooldown: [2000, 1800, 1600, 1400, 1200, 1000, 750, 400],
+                width: [12, 16, 22, 30, 40, 55, 75, 120]
+            },
+            poison: {
+                icon: '☠️',
+                color: '#00ff00',
+                damage: [3, 5, 8, 12, 18, 27, 40, 70],
+                cooldown: [1000, 900, 800, 700, 600, 500, 400, 250],
+                count: [1, 2, 2, 3, 3, 4, 5, 8],
+                duration: [3, 3.5, 4, 4.5, 5, 5.5, 6, 8],
+                speed: 300
+            },
+            boomerang: {
+                icon: '🪃',
+                color: '#cc8844',
+                damage: [18, 28, 40, 55, 75, 100, 140, 220],
+                cooldown: [1400, 1300, 1200, 1100, 950, 800, 650, 400],
+                count: [1, 1, 2, 2, 3, 3, 4, 6],
+                speed: 400,
+                pierce: [99, 99, 99, 99, 99, 99, 99, 99]
+            },
+            missile: {
+                icon: '🚀',
+                color: '#ff8800',
+                damage: [20, 32, 45, 62, 85, 115, 160, 250],
+                cooldown: [1600, 1450, 1300, 1150, 1000, 850, 700, 450],
+                count: [1, 2, 2, 3, 3, 4, 5, 8],
+                speed: 250,
+                homing: true
+            },
+            shuriken: {
+                icon: '✴️',
+                color: '#888888',
+                damage: [8, 12, 17, 24, 33, 45, 62, 95],
+                cooldown: [350, 320, 290, 260, 230, 200, 170, 120],
+                count: [2, 3, 4, 5, 6, 8, 10, 16],
+                speed: 600,
+                pierce: [1, 1, 1, 2, 2, 3, 4, 8]
+            },
+            blackhole: {
+                icon: '🌀',
+                color: '#4400aa',
+                damage: [15, 24, 35, 48, 66, 90, 125, 200],
+                cooldown: [4000, 3600, 3200, 2800, 2400, 2000, 1600, 1000],
+                radius: [80, 95, 110, 130, 155, 185, 225, 320],
+                duration: [2, 2.2, 2.4, 2.6, 2.8, 3.2, 3.8, 5],
+                pull: [30, 40, 50, 65, 85, 110, 150, 250]
+            },
+            chainLightning: {
+                icon: '⛓️',
+                color: '#88ffff',
+                damage: [22, 35, 50, 68, 92, 125, 175, 280],
+                cooldown: [1800, 1650, 1500, 1350, 1200, 1050, 850, 550],
+                chains: [2, 3, 4, 5, 6, 8, 10, 16],
+                range: [150, 170, 190, 215, 245, 280, 330, 450]
+            },
+            holyBeam: {
+                icon: '🌟',
+                color: '#ffffaa',
+                damage: [6, 10, 15, 22, 32, 46, 66, 110],
+                tickRate: [100, 90, 80, 70, 60, 50, 40, 25],
+                width: [8, 10, 14, 18, 24, 32, 45, 70]
+            }
+        };
+        
+        // Arrays
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+        let gems = [];
+        let damageTexts = [];
+        let effects = [];
+        let blackholes = [];
+        let items = [];
+        
+        // Input
+        const keys = {};
+
+
+        // 모바일 가상 조이스틱 상태
+        const joystick = {
+            active: false,
+            pointerId: null,
+            x: 0,
+            y: 0,
+            maxDistance: 48
+        };
+
+        const joystickEl = document.getElementById('joystick');
+        const joystickKnobEl = document.getElementById('joystickKnob');
+
+        function resetJoystick() {
+            joystick.active = false;
+            joystick.pointerId = null;
+            joystick.x = 0;
+            joystick.y = 0;
+            joystickKnobEl.style.transform = 'translate3d(0, 0, 0)';
+        }
+
+        function updateJoystickFromPointer(clientX, clientY) {
+            const rect = joystickEl.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            let dx = clientX - cx;
+            let dy = clientY - cy;
+            const distance = Math.hypot(dx, dy);
+            const max = joystick.maxDistance;
+
+            if (distance > max) {
+                dx = (dx / distance) * max;
+                dy = (dy / distance) * max;
+            }
+
+            joystick.x = dx / max;
+            joystick.y = dy / max;
+            joystickKnobEl.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+        }
+
+        joystickEl.addEventListener('pointerdown', e => {
+            if (!game.running) return;
+            joystick.active = true;
+            joystick.pointerId = e.pointerId;
+            joystickEl.setPointerCapture?.(e.pointerId);
+            updateJoystickFromPointer(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+
+        joystickEl.addEventListener('pointermove', e => {
+            if (!joystick.active || joystick.pointerId !== e.pointerId) return;
+            updateJoystickFromPointer(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+
+        const releaseJoystick = e => {
+            if (!joystick.active || joystick.pointerId !== e.pointerId) return;
+            resetJoystick();
+            e.preventDefault();
+        };
+
+        joystickEl.addEventListener('pointerup', releaseJoystick);
+        joystickEl.addEventListener('pointercancel', releaseJoystick);
+        joystickEl.addEventListener('lostpointercapture', () => resetJoystick);
+
+        window.addEventListener('blur', resetJoystick);
+
+        
+        document.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            // Pause toggle
+            if ((e.key === 'Escape' || e.key.toLowerCase() === 'p') && game.running) {
+                if (document.getElementById('weaponListScreen').style.display === 'flex') {
+                    closeWeaponList();
+                } else if (document.getElementById('levelUpScreen').style.display === 'flex') {
+                    // Don't pause during level up
+                } else {
+                    togglePause();
+                }
+                e.preventDefault();
+            }
+            
+            // Weapon list toggle
+            if (e.key === 'Tab' && game.running) {
+                if (document.getElementById('weaponListScreen').style.display === 'flex') {
+                    closeWeaponList();
+                } else {
+                    showWeaponList();
+                }
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        
+        // Enemy types
+        const enemyTypes = {
+            zombie: { color: '#4a7c4e', hp: 20, speed: 60, damage: 10, exp: 1, radius: 18, shape: 'circle' },
+            bat: { color: '#6a4c7a', hp: 10, speed: 120, damage: 5, exp: 1, radius: 12, shape: 'triangle' },
+            skeleton: { color: '#d4d4aa', hp: 30, speed: 55, damage: 15, exp: 2, radius: 18, shape: 'circle' },
+            ghost: { color: '#aaccff', hp: 25, speed: 85, damage: 12, exp: 2, radius: 16, shape: 'circle', alpha: 0.6 },
+            demon: { color: '#cc3333', hp: 50, speed: 70, damage: 20, exp: 3, radius: 22, shape: 'diamond' },
+            vampire: { color: '#8b0000', hp: 80, speed: 95, damage: 25, exp: 5, radius: 24, shape: 'circle' },
+            dragon: { color: '#ff6600', hp: 150, speed: 45, damage: 35, exp: 10, radius: 35, shape: 'diamond' },
+            slime: { color: '#44dd44', hp: 15, speed: 40, damage: 5, exp: 1, radius: 14, shape: 'circle' },
+            spider: { color: '#333333', hp: 35, speed: 110, damage: 18, exp: 3, radius: 16, shape: 'star' },
+            boss: { color: '#ff0000', hp: 1500, speed: 35, damage: 50, exp: 100, radius: 60, isBoss: true, shape: 'boss' }
+        };
+        
+        // Weapon timers
+        const weaponTimers = {};
+        let orbitAngle = 0;
+        
+        // Start Game
+        document.getElementById('startBtn').addEventListener('click', () => startGame(null));
+        document.getElementById('challengeBtn').addEventListener('click', showChallengeSelect);
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            startGame(game.challengeMode);
+        });
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+
+
+        // 모바일 버튼
+        document.getElementById('mobilePause').addEventListener('pointerdown', e => {
+            e.preventDefault();
+            if (!game.running) return;
+            if (document.getElementById('levelUpScreen').style.display === 'flex') return;
+            if (document.getElementById('weaponListScreen').style.display === 'flex') {
+                closeWeaponList();
+                return;
+            }
+            togglePause();
+        });
+
+        document.getElementById('mobileWeapons').addEventListener('pointerdown', e => {
+            e.preventDefault();
+            if (!game.running) return;
+            if (document.getElementById('levelUpScreen').style.display === 'flex') return;
+            const list = document.getElementById('weaponListScreen');
+            if (list.style.display === 'flex') closeWeaponList();
+            else showWeaponList();
+        });
+
+        document.getElementById('mobileWeaponClose').addEventListener('pointerdown', e => {
+            e.preventDefault();
+            if (document.getElementById('weaponListScreen').style.display === 'flex') {
+                closeWeaponList();
+            }
+        });
+
+        
+        function showChallengeSelect() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('challengeSelectScreen').style.display = 'flex';
+        }
+        
+        function closeChallengeSelect() {
+            document.getElementById('challengeSelectScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+        
+        function startChallenge(challengeType) {
+            document.getElementById('challengeSelectScreen').style.display = 'none';
+            startGame(challengeType);
+        }
+        
+        function restartFromClear() {
+            document.getElementById('challengeClearScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+        
+        function checkChallengeComplete() {
+            if (game.challengeMode === 'allWeapons') {
+                const weaponCount = Object.keys(player.weapons).length;
+                document.getElementById('challengeWeaponCount').textContent = weaponCount;
+                document.getElementById('challengeProgressFill').style.width = `${(weaponCount / 15) * 100}%`;
+                
+                if (weaponCount >= 15 && !game.challengeComplete) {
+                    game.challengeComplete = true;
+                    game.paused = true;
+                    
+                    const timeLabel = t('clearTime');
+                    const killsLabel = t('clearKills');
+                    
+                    document.getElementById('clearStats').innerHTML = `
+                        ${timeLabel}: ${Math.floor(game.time / 60)}m ${Math.floor(game.time % 60)}s<br>
+                        ${killsLabel}: ${game.kills}
+                    `;
+                    document.getElementById('challengeClearScreen').style.display = 'flex';
+                }
+            }
+        }
+        
+        function togglePause() {
+            if (!game.running) return;
+            game.paused = !game.paused;
+            document.getElementById('pauseScreen').style.display = game.paused ? 'flex' : 'none';
+        }
+        
+        function showWeaponList() {
+            game.paused = true;
+            document.getElementById('pauseScreen').style.display = 'none';
+            
+            const grid = document.getElementById('weaponGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(weaponDefs).forEach(([key, w]) => {
+                const owned = player.weapons[key] || 0;
+                const wText = getWeaponText(key);
+                const div = document.createElement('div');
+                div.className = 'weapon-list-item' + (owned > 0 ? ' owned' : '');
+                div.innerHTML = `
+                    <div class="w-icon" style="background: ${w.color}33; border: 2px solid ${w.color}">${w.icon}</div>
+                    <div class="w-info">
+                        <div class="w-name">${wText.name}</div>
+                        <div class="w-desc">${wText.desc}</div>
+                    </div>
+                    <div class="w-level">${owned > 0 ? 'Lv.' + owned : '-'}</div>
+                `;
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('weaponListScreen').style.display = 'flex';
+        }
+        
+        function closeWeaponList() {
+            document.getElementById('weaponListScreen').style.display = 'none';
+            game.paused = false;
+        }
+        
+        function startGame(challengeType = null) {
+            document.getElementById('startScreen').style.display = 'none';
+            
+            game.running = true;
+            game.paused = false;
+            game.time = 0;
+            game.kills = 0;
+            game.challengeMode = challengeType;
+            game.challengeComplete = false;
+            
+            player.x = 0;
+            player.y = 0;
+            player.hp = 100;
+            player.maxHp = 100;
+            player.level = 1;
+            player.exp = 0;
+            // knifeOnly: 레벨업 자주 되도록 경험치 요구량 낮춤
+            player.expToLevel = challengeType === 'knifeOnly' ? 5 : 10;
+            player.weapons = { knife: 1 };
+            player.invincible = 0;
+            player.magnetTime = 0;
+            player.magnetRadius = 150;
+            
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            gems = [];
+            damageTexts = [];
+            effects = [];
+            blackholes = [];
+            items = [];
+            
+            Object.keys(weaponDefs).forEach(w => weaponTimers[w] = 0);
+            
+            // Challenge mode UI
+            if (challengeType === 'allWeapons') {
+                document.getElementById('challengeProgress').style.display = 'block';
+                document.getElementById('challengeProgressTitle').textContent = t('challengeProgressTitle');
+                document.getElementById('challengeWeaponCount').textContent = '1';
+                document.getElementById('challengeProgressFill').style.width = `${(1/15)*100}%`;
+                document.querySelector('#challengeProgress .progress').innerHTML = '<span id="challengeWeaponCount">1</span> / 15';
+            } else if (challengeType === 'knifeOnly') {
+                document.getElementById('challengeProgress').style.display = 'block';
+                document.getElementById('challengeProgressTitle').textContent = currentLang === 'ko' ? '단검 승부' : 'KNIFE ONLY';
+                document.querySelector('#challengeProgress .progress').innerHTML = 'LV.<span id="challengeKnifeLevel">1</span> / 100';
+                document.getElementById('challengeProgressFill').style.width = '1%';
+            } else {
+                document.getElementById('challengeProgress').style.display = 'none';
+            }
+            
+            updateWeaponIcons();
+            updateBuffIndicator();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+            
+            spawnEnemies();
+        }
+        
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (!game.running) return;
+            
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+            
+            if (!game.paused) {
+                game.time += dt;
+                update(dt);
+            }
+            
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function getClosestEnemy(x, y, maxDist = Infinity) {
+            let closest = null;
+            let closestDist = maxDist;
+            
+            enemies.forEach(e => {
+                const dist = Math.hypot(e.x - x, e.y - y);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closest = e;
+                }
+            });
+            
+            return closest;
+        }
+        
+        function getClosestEnemies(x, y, count, maxDist = Infinity) {
+            return enemies
+                .map(e => ({ enemy: e, dist: Math.hypot(e.x - x, e.y - y) }))
+                .filter(e => e.dist < maxDist)
+                .sort((a, b) => a.dist - b.dist)
+                .slice(0, count)
+                .map(e => e.enemy);
+        }
+        
+        function update(dt) {
+            // Player movement
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+
+            // 모바일 조이스틱 입력과 키보드 입력을 함께 지원
+            if (joystick.active) {
+                dx += joystick.x;
+                dy += joystick.y;
+            }
+            
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.sqrt(dx * dx + dy * dy);
+                dx /= len;
+                dy /= len;
+                player.x += dx * player.speed * dt;
+                player.y += dy * player.speed * dt;
+            }
+            
+            game.cameraX = player.x - canvas.width / 2;
+            game.cameraY = player.y - canvas.height / 2;
+            
+            if (game.screenShake > 0) game.screenShake -= dt * 20;
+            if (player.invincible > 0) player.invincible -= dt;
+            if (player.magnetTime > 0) player.magnetTime -= dt;
+            
+            updateWeapons(dt);
+            
+            // Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                
+                if (p.homing && enemies.length > 0) {
+                    const target = getClosestEnemy(p.x, p.y);
+                    if (target) {
+                        const angle = Math.atan2(target.y - p.y, target.x - p.x);
+                        const currentAngle = Math.atan2(p.vy, p.vx);
+                        let diff = angle - currentAngle;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        const turnSpeed = 5;
+                        const newAngle = currentAngle + Math.sign(diff) * Math.min(Math.abs(diff), turnSpeed * dt);
+                        const speed = Math.hypot(p.vx, p.vy);
+                        p.vx = Math.cos(newAngle) * speed;
+                        p.vy = Math.sin(newAngle) * speed;
+                    }
+                }
+                
+                if (p.boomerang) {
+                    p.boomerangTime += dt;
+                    if (p.boomerangTime > 0.4) {
+                        const angle = Math.atan2(player.y - p.y, player.x - p.x);
+                        p.vx = Math.cos(angle) * p.speed * 1.5;
+                        p.vy = Math.sin(angle) * p.speed * 1.5;
+                        
+                        if (Math.hypot(p.x - player.x, p.y - player.y) < 30) {
+                            projectiles.splice(i, 1);
+                            continue;
+                        }
+                    }
+                    p.rotation += dt * 15;
+                }
+                
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+                
+                if (p.life <= 0) {
+                    if (p.explode) {
+                        effects.push({
+                            type: 'explosion',
+                            x: p.x, y: p.y,
+                            radius: p.explodeRadius,
+                            life: 0.3,
+                            color: '#ff4400'
+                        });
+                        enemies.forEach((e, ei) => {
+                            if (Math.hypot(e.x - p.x, e.y - p.y) < p.explodeRadius) {
+                                damageEnemy(e, ei, p.damage * 0.5);
+                            }
+                        });
+                    }
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+                
+                for (let ei = enemies.length - 1; ei >= 0; ei--) {
+                    const e = enemies[ei];
+                    if (!e) continue;
+                    
+                    const dist = Math.hypot(p.x - e.x, p.y - e.y);
+                    if (dist < p.radius + e.radius) {
+                        if (!p.hitEnemies) p.hitEnemies = new Set();
+                        if (p.hitEnemies.has(e.id)) continue;
+                        p.hitEnemies.add(e.id);
+                        
+                        if (p.poison) {
+                            e.poisoned = { damage: p.poisonDamage, duration: p.poisonDuration };
+                        }
+                        
+                        damageEnemy(e, ei, p.damage);
+                        
+                        if (p.explode) {
+                            effects.push({
+                                type: 'explosion',
+                                x: p.x, y: p.y,
+                                radius: p.explodeRadius,
+                                life: 0.3,
+                                color: '#ff4400'
+                            });
+                            enemies.forEach((e2, ei2) => {
+                                if (e2 !== e && Math.hypot(e2.x - p.x, e2.y - p.y) < p.explodeRadius) {
+                                    damageEnemy(e2, ei2, p.damage * 0.5);
+                                }
+                            });
+                            projectiles.splice(i, 1);
+                            break;
+                        }
+                        
+                        p.pierce--;
+                        if (p.pierce <= 0) {
+                            projectiles.splice(i, 1);
+                            break;
+                        }
+                        
+                        for (let j = 0; j < 5; j++) {
+                            particles.push({
+                                x: p.x, y: p.y,
+                                vx: (Math.random() - 0.5) * 200,
+                                vy: (Math.random() - 0.5) * 200,
+                                life: 0.3,
+                                color: p.color,
+                                radius: 5
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Blackholes
+            for (let i = blackholes.length - 1; i >= 0; i--) {
+                const bh = blackholes[i];
+                bh.life -= dt;
+                bh.damageTimer -= dt;
+                
+                if (bh.life <= 0) {
+                    blackholes.splice(i, 1);
+                    continue;
+                }
+                
+                enemies.forEach((e, ei) => {
+                    const dist = Math.hypot(e.x - bh.x, e.y - bh.y);
+                    if (dist < bh.radius && dist > 20) {
+                        const angle = Math.atan2(bh.y - e.y, bh.x - e.x);
+                        e.x += Math.cos(angle) * bh.pull * dt;
+                        e.y += Math.sin(angle) * bh.pull * dt;
+                    }
+                    
+                    if (dist < bh.radius && bh.damageTimer <= 0) {
+                        damageEnemy(e, ei, bh.damage);
+                    }
+                });
+                
+                if (bh.damageTimer <= 0) bh.damageTimer = 0.3;
+            }
+            
+            // Enemies
+            let enemyId = 0;
+            enemies.forEach((e, i) => {
+                if (!e.id) e.id = ++enemyId;
+                
+                const dx = player.x - e.x;
+                const dy = player.y - e.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (e.poisoned) {
+                    e.poisoned.duration -= dt;
+                    if (!e.poisonTick) e.poisonTick = 0;
+                    e.poisonTick -= dt;
+                    if (e.poisonTick <= 0) {
+                        damageEnemy(e, i, e.poisoned.damage);
+                        e.poisonTick = 0.5;
+                        particles.push({
+                            x: e.x, y: e.y,
+                            vx: (Math.random() - 0.5) * 50,
+                            vy: -50 - Math.random() * 50,
+                            life: 0.5,
+                            color: '#00ff00',
+                            radius: 4
+                        });
+                    }
+                    if (e.poisoned.duration <= 0) e.poisoned = null;
+                }
+                
+                let speed = e.speed * (e.slow || 1);
+                if (dist > 0) {
+                    e.x += (dx / dist) * speed * dt;
+                    e.y += (dy / dist) * speed * dt;
+                }
+                
+                e.slow = 1;
+                
+                if (dist < e.radius + player.radius && player.invincible <= 0) {
+                    player.hp -= e.damage;
+                    player.invincible = 1;
+                    game.screenShake = 10;
+                    
+                    player.x -= (dx / dist) * 50;
+                    player.y -= (dy / dist) * 50;
+                    
+                    for (let j = 0; j < 20; j++) {
+                        particles.push({
+                            x: player.x, y: player.y,
+                            vx: (Math.random() - 0.5) * 300,
+                            vy: (Math.random() - 0.5) * 300,
+                            life: 0.5,
+                            color: '#ff0000',
+                            radius: 6
+                        });
+                    }
+                    
+                    if (player.hp <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+            
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+                p.radius *= 0.95;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+            
+            // Items
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                const dist = Math.hypot(item.x - player.x, item.y - player.y);
+                
+                if (dist < player.radius + 25) {
+                    // Pickup item
+                    if (item.type === 'magnet') {
+                        player.magnetTime = 30;
+                        player.magnetRadius = 500;
+                        
+                        damageTexts.push({
+                            x: player.x, y: player.y - 40,
+                            text: t('magnetText'),
+                            life: 1.5,
+                            color: '#00aaff'
+                        });
+                    } else if (item.type === 'heal') {
+                        const healAmount = player.maxHp * 0.5;
+                        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                        
+                        damageTexts.push({
+                            x: player.x, y: player.y - 40,
+                            text: '+' + Math.floor(healAmount) + ' HP!',
+                            life: 1.5,
+                            color: '#00ff44'
+                        });
+                        
+                        for (let j = 0; j < 15; j++) {
+                            particles.push({
+                                x: player.x, y: player.y,
+                                vx: (Math.random() - 0.5) * 150,
+                                vy: (Math.random() - 0.5) * 150,
+                                life: 0.6,
+                                color: '#00ff44',
+                                radius: 6
+                            });
+                        }
+                    }
+                    
+                    items.splice(i, 1);
+                    updateBuffIndicator();
+                    continue;
+                }
+                
+                // Float animation
+                item.floatTime = (item.floatTime || 0) + dt;
+            }
+            
+            // Gems
+            const currentMagnetRadius = player.magnetTime > 0 ? player.magnetRadius : 150;
+            for (let i = gems.length - 1; i >= 0; i--) {
+                const g = gems[i];
+                const dist = Math.hypot(g.x - player.x, g.y - player.y);
+                
+                if (dist < currentMagnetRadius) {
+                    const speed = player.magnetTime > 0 ? 800 : 500;
+                    g.x += ((player.x - g.x) / dist) * speed * dt;
+                    g.y += ((player.y - g.y) / dist) * speed * dt;
+                }
+                
+                if (dist < player.radius + 10) {
+                    player.exp += g.value;
+                    gems.splice(i, 1);
+                    
+                    for (let j = 0; j < 5; j++) {
+                        particles.push({
+                            x: g.x, y: g.y,
+                            vx: (Math.random() - 0.5) * 100,
+                            vy: (Math.random() - 0.5) * 100,
+                            life: 0.3,
+                            color: '#00ff88',
+                            radius: 4
+                        });
+                    }
+                    
+                    while (player.exp >= player.expToLevel) {
+                        player.exp -= player.expToLevel;
+                        player.level++;
+                        // knifeOnly: 경험치 증가율 낮춤 (1.15배), 일반: 1.4배
+                        const expMultiplier = game.challengeMode === 'knifeOnly' ? 1.15 : 1.4;
+                        player.expToLevel = Math.floor(player.expToLevel * expMultiplier);
+                        showLevelUp();
+                    }
+                }
+            }
+            
+            // Damage texts
+            for (let i = damageTexts.length - 1; i >= 0; i--) {
+                const d = damageTexts[i];
+                d.y -= 60 * dt;
+                d.life -= dt;
+                if (d.life <= 0) damageTexts.splice(i, 1);
+            }
+            
+            // Effects
+            for (let i = effects.length - 1; i >= 0; i--) {
+                const e = effects[i];
+                e.life -= dt;
+                if (e.life <= 0) effects.splice(i, 1);
+            }
+            
+            updateUI();
+            updateBuffIndicator();
+        }
+        
+        function updateWeapons(dt) {
+            const weapons = player.weapons;
+            
+            // Knife
+            if (weapons.knife) {
+                const w = weaponDefs.knife;
+                const lv = weapons.knife - 1;
+                weaponTimers.knife = (weaponTimers.knife || 0) - dt * 1000;
+                
+                if (weaponTimers.knife <= 0 && enemies.length > 0) {
+                    weaponTimers.knife = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: 10,
+                            damage: w.damage[lv],
+                            pierce: w.pierce[lv],
+                            life: 2,
+                            color: w.color,
+                            type: 'knife'
+                        });
+                    });
+                }
+            }
+            
+            // Fireball
+            if (weapons.fireball) {
+                const w = weaponDefs.fireball;
+                const lv = weapons.fireball - 1;
+                weaponTimers.fireball = (weaponTimers.fireball || 0) - dt * 1000;
+                
+                if (weaponTimers.fireball <= 0 && enemies.length > 0) {
+                    weaponTimers.fireball = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: w.radius[lv],
+                            damage: w.damage[lv],
+                            pierce: 1,
+                            life: 2.5,
+                            color: w.color,
+                            type: 'fireball',
+                            explode: true,
+                            explodeRadius: w.radius[lv] * 1.5
+                        });
+                    });
+                }
+            }
+            
+            // Lightning
+            if (weapons.lightning) {
+                const w = weaponDefs.lightning;
+                const lv = weapons.lightning - 1;
+                weaponTimers.lightning = (weaponTimers.lightning || 0) - dt * 1000;
+                
+                if (weaponTimers.lightning <= 0 && enemies.length > 0) {
+                    weaponTimers.lightning = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        effects.push({
+                            type: 'lightning',
+                            x: target.x, y: target.y,
+                            radius: w.radius[lv],
+                            life: 0.3,
+                            color: w.color
+                        });
+                        
+                        enemies.forEach((e, ei) => {
+                            if (Math.hypot(e.x - target.x, e.y - target.y) < w.radius[lv]) {
+                                damageEnemy(e, ei, w.damage[lv]);
+                            }
+                        });
+                    });
+                    game.screenShake = 3;
+                }
+            }
+            
+            // Aura
+            if (weapons.aura) {
+                const w = weaponDefs.aura;
+                const lv = weapons.aura - 1;
+                weaponTimers.aura = (weaponTimers.aura || 0) - dt * 1000;
+                
+                if (weaponTimers.aura <= 0) {
+                    weaponTimers.aura = w.cooldown[lv];
+                    
+                    enemies.forEach((e, ei) => {
+                        if (Math.hypot(e.x - player.x, e.y - player.y) < w.radius[lv]) {
+                            damageEnemy(e, ei, w.damage[lv]);
+                        }
+                    });
+                }
+            }
+            
+            // Orbit
+            if (weapons.orbit) {
+                const w = weaponDefs.orbit;
+                const lv = weapons.orbit - 1;
+                orbitAngle += w.speed[lv] * dt;
+                
+                const count = w.count[lv];
+                for (let i = 0; i < count; i++) {
+                    const angle = orbitAngle + (i / count) * Math.PI * 2;
+                    const ox = player.x + Math.cos(angle) * w.radius[lv];
+                    const oy = player.y + Math.sin(angle) * w.radius[lv];
+                    
+                    enemies.forEach((e, ei) => {
+                        if (Math.hypot(e.x - ox, e.y - oy) < e.radius + 15) {
+                            if (!e.orbitHit) e.orbitHit = 0;
+                            if (game.time - e.orbitHit > 0.15) {
+                                e.orbitHit = game.time;
+                                damageEnemy(e, ei, w.damage[lv]);
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Explosion
+            if (weapons.explosion) {
+                const w = weaponDefs.explosion;
+                const lv = weapons.explosion - 1;
+                weaponTimers.explosion = (weaponTimers.explosion || 0) - dt * 1000;
+                
+                if (weaponTimers.explosion <= 0 && enemies.length > 0) {
+                    weaponTimers.explosion = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        effects.push({
+                            type: 'explosion',
+                            x: target.x, y: target.y,
+                            radius: w.radius[lv],
+                            life: 0.4,
+                            color: w.color
+                        });
+                        
+                        game.screenShake = 5;
+                        
+                        enemies.forEach((e, ei) => {
+                            if (Math.hypot(e.x - target.x, e.y - target.y) < w.radius[lv]) {
+                                damageEnemy(e, ei, w.damage[lv]);
+                            }
+                        });
+                    });
+                }
+            }
+            
+            // Freeze
+            if (weapons.freeze) {
+                const w = weaponDefs.freeze;
+                const lv = weapons.freeze - 1;
+                
+                enemies.forEach((e, ei) => {
+                    const dist = Math.hypot(e.x - player.x, e.y - player.y);
+                    if (dist < w.radius[lv]) {
+                        e.slow = 1 - w.slow[lv];
+                        if (Math.random() < 0.05) {
+                            damageEnemy(e, ei, w.damage[lv]);
+                        }
+                    }
+                });
+            }
+            
+            // Laser
+            if (weapons.laser) {
+                const w = weaponDefs.laser;
+                const lv = weapons.laser - 1;
+                weaponTimers.laser = (weaponTimers.laser || 0) - dt * 1000;
+                
+                if (weaponTimers.laser <= 0 && enemies.length > 0) {
+                    weaponTimers.laser = w.cooldown[lv];
+                    
+                    const target = getClosestEnemy(player.x, player.y);
+                    if (target) {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        
+                        effects.push({
+                            type: 'laser',
+                            x: player.x, y: player.y,
+                            angle: angle,
+                            width: w.width[lv],
+                            life: 0.3,
+                            color: w.color
+                        });
+                        
+                        enemies.forEach((e, ei) => {
+                            const ex = e.x - player.x;
+                            const ey = e.y - player.y;
+                            const proj = ex * Math.cos(angle) + ey * Math.sin(angle);
+                            const perp = Math.abs(-ex * Math.sin(angle) + ey * Math.cos(angle));
+                            
+                            if (proj > 0 && perp < w.width[lv] + e.radius) {
+                                damageEnemy(e, ei, w.damage[lv]);
+                            }
+                        });
+                    }
+                }
+            }
+            
+            // Poison
+            if (weapons.poison) {
+                const w = weaponDefs.poison;
+                const lv = weapons.poison - 1;
+                weaponTimers.poison = (weaponTimers.poison || 0) - dt * 1000;
+                
+                if (weaponTimers.poison <= 0 && enemies.length > 0) {
+                    weaponTimers.poison = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: 8,
+                            damage: w.damage[lv],
+                            pierce: 1,
+                            life: 2,
+                            color: w.color,
+                            type: 'poison',
+                            poison: true,
+                            poisonDamage: w.damage[lv],
+                            poisonDuration: w.duration[lv]
+                        });
+                    });
+                }
+            }
+            
+            // Boomerang
+            if (weapons.boomerang) {
+                const w = weaponDefs.boomerang;
+                const lv = weapons.boomerang - 1;
+                weaponTimers.boomerang = (weaponTimers.boomerang || 0) - dt * 1000;
+                
+                if (weaponTimers.boomerang <= 0 && enemies.length > 0) {
+                    weaponTimers.boomerang = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: 15,
+                            damage: w.damage[lv],
+                            pierce: w.pierce[lv],
+                            life: 5,
+                            color: w.color,
+                            type: 'boomerang',
+                            boomerang: true,
+                            boomerangTime: 0,
+                            rotation: 0,
+                            speed: w.speed
+                        });
+                    });
+                }
+            }
+            
+            // Missile
+            if (weapons.missile) {
+                const w = weaponDefs.missile;
+                const lv = weapons.missile - 1;
+                weaponTimers.missile = (weaponTimers.missile || 0) - dt * 1000;
+                
+                if (weaponTimers.missile <= 0 && enemies.length > 0) {
+                    weaponTimers.missile = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach((target, i) => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x) + (i - (targets.length-1)/2) * 0.3;
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: 10,
+                            damage: w.damage[lv],
+                            pierce: 1,
+                            life: 4,
+                            color: w.color,
+                            type: 'missile',
+                            homing: true,
+                            explode: true,
+                            explodeRadius: 40
+                        });
+                    });
+                }
+            }
+            
+            // Shuriken
+            if (weapons.shuriken) {
+                const w = weaponDefs.shuriken;
+                const lv = weapons.shuriken - 1;
+                weaponTimers.shuriken = (weaponTimers.shuriken || 0) - dt * 1000;
+                
+                if (weaponTimers.shuriken <= 0 && enemies.length > 0) {
+                    weaponTimers.shuriken = w.cooldown[lv];
+                    const targets = getClosestEnemies(player.x, player.y, w.count[lv]);
+                    
+                    targets.forEach(target => {
+                        const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                        projectiles.push({
+                            x: player.x, y: player.y,
+                            vx: Math.cos(angle) * w.speed,
+                            vy: Math.sin(angle) * w.speed,
+                            radius: 8,
+                            damage: w.damage[lv],
+                            pierce: w.pierce[lv],
+                            life: 1.5,
+                            color: w.color,
+                            type: 'shuriken'
+                        });
+                    });
+                }
+            }
+            
+            // Blackhole
+            if (weapons.blackhole) {
+                const w = weaponDefs.blackhole;
+                const lv = weapons.blackhole - 1;
+                weaponTimers.blackhole = (weaponTimers.blackhole || 0) - dt * 1000;
+                
+                if (weaponTimers.blackhole <= 0 && enemies.length > 0) {
+                    weaponTimers.blackhole = w.cooldown[lv];
+                    
+                    const target = getClosestEnemy(player.x, player.y);
+                    if (target) {
+                        blackholes.push({
+                            x: target.x, y: target.y,
+                            radius: w.radius[lv],
+                            life: w.duration[lv],
+                            damage: w.damage[lv],
+                            pull: w.pull[lv],
+                            damageTimer: 0
+                        });
+                    }
+                }
+            }
+            
+            // Chain Lightning
+            if (weapons.chainLightning) {
+                const w = weaponDefs.chainLightning;
+                const lv = weapons.chainLightning - 1;
+                weaponTimers.chainLightning = (weaponTimers.chainLightning || 0) - dt * 1000;
+                
+                if (weaponTimers.chainLightning <= 0 && enemies.length > 0) {
+                    weaponTimers.chainLightning = w.cooldown[lv];
+                    
+                    const target = getClosestEnemy(player.x, player.y);
+                    if (target) {
+                        let current = target;
+                        let hitEnemies = new Set([current]);
+                        let chains = [{ x: player.x, y: player.y }, { x: current.x, y: current.y }];
+                        
+                        damageEnemy(current, enemies.indexOf(current), w.damage[lv]);
+                        
+                        for (let c = 0; c < w.chains[lv] - 1; c++) {
+                            let next = null;
+                            let nextDist = w.range[lv];
+                            
+                            enemies.forEach(e => {
+                                if (!hitEnemies.has(e)) {
+                                    const dist = Math.hypot(e.x - current.x, e.y - current.y);
+                                    if (dist < nextDist) {
+                                        nextDist = dist;
+                                        next = e;
+                                    }
+                                }
+                            });
+                            
+                            if (next) {
+                                hitEnemies.add(next);
+                                chains.push({ x: next.x, y: next.y });
+                                damageEnemy(next, enemies.indexOf(next), w.damage[lv] * 0.8);
+                                current = next;
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        effects.push({
+                            type: 'chainLightning',
+                            chains: chains,
+                            life: 0.25,
+                            color: w.color
+                        });
+                    }
+                }
+            }
+            
+            // Holy Beam
+            if (weapons.holyBeam) {
+                const w = weaponDefs.holyBeam;
+                const lv = weapons.holyBeam - 1;
+                weaponTimers.holyBeam = (weaponTimers.holyBeam || 0) - dt * 1000;
+                
+                if (weaponTimers.holyBeam <= 0 && enemies.length > 0) {
+                    weaponTimers.holyBeam = w.tickRate[lv];
+                    
+                    const target = getClosestEnemy(player.x, player.y);
+                    if (target) {
+                        damageEnemy(target, enemies.indexOf(target), w.damage[lv]);
+                        
+                        effects.push({
+                            type: 'holyBeam',
+                            x1: player.x, y1: player.y,
+                            x2: target.x, y2: target.y,
+                            width: w.width[lv],
+                            life: 0.08,
+                            color: w.color
+                        });
+                    }
+                }
+            }
+        }
+        
+        function damageEnemy(e, index, damage) {
+            if (!e || e.hp <= 0) return;
+            
+            e.hp -= damage;
+            e.flash = 0.1;
+            
+            damageTexts.push({
+                x: e.x + (Math.random() - 0.5) * 30,
+                y: e.y - 10,
+                text: Math.floor(damage),
+                life: 0.5,
+                color: e.isBoss ? '#ffff00' : '#ffffff'
+            });
+            
+            if (e.hp <= 0) {
+                for (let i = 0; i < (e.isBoss ? 40 : 12); i++) {
+                    particles.push({
+                        x: e.x, y: e.y,
+                        vx: (Math.random() - 0.5) * 300,
+                        vy: (Math.random() - 0.5) * 300,
+                        life: 0.6,
+                        color: e.isBoss ? '#ff4400' : e.color,
+                        radius: e.isBoss ? 12 : 6
+                    });
+                }
+                
+                const gemCount = e.isBoss ? 30 : 1 + Math.floor(Math.random() * 2);
+                for (let i = 0; i < gemCount; i++) {
+                    gems.push({
+                        x: e.x + (Math.random() - 0.5) * 50,
+                        y: e.y + (Math.random() - 0.5) * 50,
+                        value: e.exp / gemCount
+                    });
+                }
+                
+                // Boss drops items!
+                if (e.isBoss) {
+                    // Magnet item
+                    items.push({
+                        x: e.x - 30,
+                        y: e.y,
+                        type: 'magnet',
+                        floatTime: 0
+                    });
+                    
+                    // Heal item
+                    items.push({
+                        x: e.x + 30,
+                        y: e.y,
+                        type: 'heal',
+                        floatTime: Math.PI
+                    });
+                }
+                
+                game.kills++;
+                if (e.isBoss) game.screenShake = 15;
+                
+                const idx = enemies.indexOf(e);
+                if (idx > -1) enemies.splice(idx, 1);
+            }
+        }
+        
+        function drawEnemy(e, sx, sy) {
+            ctx.save();
+            
+            if (e.alpha) ctx.globalAlpha = e.alpha;
+            
+            if (e.flash > 0) {
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(sx, sy, e.radius + 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                e.flash -= 0.016;
+                ctx.globalAlpha = e.alpha || 1;
+            }
+            
+            if (e.poisoned) {
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.arc(sx, sy, e.radius + 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#00ff00';
+                ctx.fill();
+                ctx.globalAlpha = e.alpha || 1;
+            }
+            
+            ctx.fillStyle = e.color;
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            
+            if (e.shape === 'circle' || !e.shape) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, e.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Eyes
+                ctx.fillStyle = e.isBoss ? '#ff0' : '#fff';
+                ctx.beginPath();
+                ctx.arc(sx - e.radius * 0.3, sy - e.radius * 0.2, e.radius * 0.2, 0, Math.PI * 2);
+                ctx.arc(sx + e.radius * 0.3, sy - e.radius * 0.2, e.radius * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(sx - e.radius * 0.25, sy - e.radius * 0.15, e.radius * 0.1, 0, Math.PI * 2);
+                ctx.arc(sx + e.radius * 0.35, sy - e.radius * 0.15, e.radius * 0.1, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (e.shape === 'triangle') {
+                ctx.beginPath();
+                ctx.moveTo(sx, sy - e.radius);
+                ctx.lineTo(sx - e.radius, sy + e.radius);
+                ctx.lineTo(sx + e.radius, sy + e.radius);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            } else if (e.shape === 'diamond') {
+                ctx.beginPath();
+                ctx.moveTo(sx, sy - e.radius);
+                ctx.lineTo(sx + e.radius, sy);
+                ctx.lineTo(sx, sy + e.radius);
+                ctx.lineTo(sx - e.radius, sy);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Evil eyes
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                ctx.arc(sx - e.radius * 0.3, sy - e.radius * 0.1, e.radius * 0.15, 0, Math.PI * 2);
+                ctx.arc(sx + e.radius * 0.3, sy - e.radius * 0.1, e.radius * 0.15, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (e.shape === 'star') {
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    const r = i % 2 === 0 ? e.radius : e.radius * 0.5;
+                    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+                    const x = sx + Math.cos(angle) * r;
+                    const y = sy + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            } else if (e.shape === 'boss') {
+                // Boss body
+                ctx.beginPath();
+                ctx.arc(sx, sy, e.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Horns
+                ctx.fillStyle = '#880000';
+                ctx.beginPath();
+                ctx.moveTo(sx - e.radius * 0.6, sy - e.radius * 0.5);
+                ctx.lineTo(sx - e.radius * 0.9, sy - e.radius * 1.3);
+                ctx.lineTo(sx - e.radius * 0.3, sy - e.radius * 0.7);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(sx + e.radius * 0.6, sy - e.radius * 0.5);
+                ctx.lineTo(sx + e.radius * 0.9, sy - e.radius * 1.3);
+                ctx.lineTo(sx + e.radius * 0.3, sy - e.radius * 0.7);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Angry eyes
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                ctx.arc(sx - e.radius * 0.35, sy - e.radius * 0.1, e.radius * 0.25, 0, Math.PI * 2);
+                ctx.arc(sx + e.radius * 0.35, sy - e.radius * 0.1, e.radius * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#f00';
+                ctx.beginPath();
+                ctx.arc(sx - e.radius * 0.35, sy - e.radius * 0.1, e.radius * 0.12, 0, Math.PI * 2);
+                ctx.arc(sx + e.radius * 0.35, sy - e.radius * 0.1, e.radius * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(sx, sy + e.radius * 0.3, e.radius * 0.4, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+            }
+            
+            if (e.isBoss) {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(sx - 50, sy - e.radius - 20, 100, 10);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(sx - 50, sy - e.radius - 20, (e.hp / e.maxHp) * 100, 10);
+            }
+            
+            ctx.restore();
+        }
+        
+        function drawPlayer(px, py) {
+            ctx.save();
+            
+            // Magnet aura
+            if (player.magnetTime > 0) {
+                ctx.beginPath();
+                ctx.arc(px, py, player.magnetRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(0, 170, 255, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([10, 10]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Body
+            ctx.fillStyle = '#4488ff';
+            ctx.strokeStyle = '#2266cc';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(px, py, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Cape
+            ctx.fillStyle = '#3366dd';
+            ctx.beginPath();
+            ctx.moveTo(px - player.radius * 0.8, py);
+            ctx.quadraticCurveTo(px - player.radius * 1.5, py + player.radius * 1.2, px, py + player.radius * 0.8);
+            ctx.quadraticCurveTo(px + player.radius * 1.5, py + player.radius * 1.2, px + player.radius * 0.8, py);
+            ctx.fill();
+            
+            // Hat
+            ctx.fillStyle = '#2255bb';
+            ctx.beginPath();
+            ctx.moveTo(px, py - player.radius * 1.8);
+            ctx.lineTo(px - player.radius * 0.8, py - player.radius * 0.3);
+            ctx.lineTo(px + player.radius * 0.8, py - player.radius * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Hat brim
+            ctx.beginPath();
+            ctx.ellipse(px, py - player.radius * 0.3, player.radius * 1.1, player.radius * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Face
+            ctx.fillStyle = '#ffddaa';
+            ctx.beginPath();
+            ctx.arc(px, py, player.radius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(px - player.radius * 0.2, py - player.radius * 0.1, player.radius * 0.18, 0, Math.PI * 2);
+            ctx.arc(px + player.radius * 0.2, py - player.radius * 0.1, player.radius * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(px - player.radius * 0.18, py - player.radius * 0.08, player.radius * 0.08, 0, Math.PI * 2);
+            ctx.arc(px + player.radius * 0.22, py - player.radius * 0.08, player.radius * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        function drawItem(item, sx, sy) {
+            ctx.save();
+            
+            const floatOffset = Math.sin(item.floatTime * 3) * 5;
+            sy += floatOffset;
+            
+            // Glow
+            ctx.beginPath();
+            ctx.arc(sx, sy, 30, 0, Math.PI * 2);
+            const glowColor = item.type === 'magnet' ? 'rgba(0, 170, 255, 0.3)' : 'rgba(0, 255, 100, 0.3)';
+            ctx.fillStyle = glowColor;
+            ctx.fill();
+            
+            if (item.type === 'magnet') {
+                // Magnet shape (U shape)
+                ctx.fillStyle = '#0088ff';
+                ctx.strokeStyle = '#005599';
+                ctx.lineWidth = 2;
+                
+                // Left pole
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(sx - 15, sy - 12, 8, 24);
+                ctx.strokeRect(sx - 15, sy - 12, 8, 24);
+                
+                // Right pole
+                ctx.fillStyle = '#0000ff';
+                ctx.fillRect(sx + 7, sy - 12, 8, 24);
+                ctx.strokeRect(sx + 7, sy - 12, 8, 24);
+                
+                // Bottom connector
+                ctx.fillStyle = '#888888';
+                ctx.fillRect(sx - 15, sy + 6, 30, 8);
+                ctx.strokeRect(sx - 15, sy + 6, 30, 8);
+                
+            } else if (item.type === 'heal') {
+                // Heart shape
+                ctx.fillStyle = '#ff3366';
+                ctx.strokeStyle = '#cc1144';
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(sx, sy + 10);
+                ctx.bezierCurveTo(sx - 20, sy - 5, sx - 12, sy - 18, sx, sy - 8);
+                ctx.bezierCurveTo(sx + 12, sy - 18, sx + 20, sy - 5, sx, sy + 10);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Shine
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.beginPath();
+                ctx.ellipse(sx - 6, sy - 8, 4, 3, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
+        function render() {
+            ctx.save();
+            
+            if (game.screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * game.screenShake,
+                    (Math.random() - 0.5) * game.screenShake
+                );
+            }
+            
+            ctx.fillStyle = '#16213e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid
+            ctx.strokeStyle = '#1a2a4a';
+            ctx.lineWidth = 1;
+            const gridSize = 100;
+            const offsetX = -game.cameraX % gridSize;
+            const offsetY = -game.cameraY % gridSize;
+            
+            for (let x = offsetX; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = offsetY; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Blackholes
+            blackholes.forEach(bh => {
+                const sx = bh.x - game.cameraX;
+                const sy = bh.y - game.cameraY;
+                
+                const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, bh.radius);
+                gradient.addColorStop(0, 'rgba(100, 0, 200, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(50, 0, 100, 0.5)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(sx, sy, bh.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                ctx.strokeStyle = '#8800ff';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    const startAngle = game.time * 3 + i * Math.PI * 2 / 3;
+                    for (let a = 0; a < Math.PI * 2; a += 0.1) {
+                        const r = bh.radius * (1 - a / (Math.PI * 2));
+                        const x = sx + Math.cos(startAngle + a) * r;
+                        const y = sy + Math.sin(startAngle + a) * r;
+                        if (a === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            });
+            
+            // Effects
+            effects.forEach(e => {
+                if (e.type === 'lightning') {
+                    const sx = e.x - game.cameraX;
+                    const sy = e.y - game.cameraY;
+                    
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, e.radius * (1 - e.life / 0.3), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 100, ${e.life})`;
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy - 600);
+                    let y = sy - 600;
+                    while (y < sy) {
+                        y += 25;
+                        ctx.lineTo(sx + (Math.random() - 0.5) * 50, y);
+                    }
+                    ctx.stroke();
+                }
+                
+                if (e.type === 'explosion') {
+                    const sx = e.x - game.cameraX;
+                    const sy = e.y - game.cameraY;
+                    const progress = 1 - e.life / 0.4;
+                    
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, e.radius * progress, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 100, 0, ${e.life * 2})`;
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, e.radius * 0.6 * progress, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 220, 100, ${e.life * 2})`;
+                    ctx.fill();
+                }
+                
+                if (e.type === 'laser') {
+                    ctx.save();
+                    const sx = e.x - game.cameraX;
+                    const sy = e.y - game.cameraY;
+                    ctx.translate(sx, sy);
+                    ctx.rotate(e.angle);
+                    
+                    ctx.globalAlpha = e.life / 0.3;
+                    ctx.fillStyle = e.color;
+                    ctx.fillRect(0, -e.width/2, 2000, e.width);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, -e.width/4, 2000, e.width/2);
+                    ctx.restore();
+                }
+                
+                if (e.type === 'chainLightning') {
+                    ctx.strokeStyle = e.color;
+                    ctx.lineWidth = 3;
+                    ctx.globalAlpha = e.life / 0.25;
+                    ctx.beginPath();
+                    
+                    for (let i = 0; i < e.chains.length - 1; i++) {
+                        const p1 = e.chains[i];
+                        const p2 = e.chains[i + 1];
+                        const sx1 = p1.x - game.cameraX;
+                        const sy1 = p1.y - game.cameraY;
+                        const sx2 = p2.x - game.cameraX;
+                        const sy2 = p2.y - game.cameraY;
+                        
+                        ctx.moveTo(sx1, sy1);
+                        const segments = 5;
+                        for (let j = 1; j <= segments; j++) {
+                            const t = j / segments;
+                            const x = sx1 + (sx2 - sx1) * t + (j < segments ? (Math.random() - 0.5) * 20 : 0);
+                            const y = sy1 + (sy2 - sy1) * t + (j < segments ? (Math.random() - 0.5) * 20 : 0);
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+                
+                if (e.type === 'holyBeam') {
+                    const sx1 = e.x1 - game.cameraX;
+                    const sy1 = e.y1 - game.cameraY;
+                    const sx2 = e.x2 - game.cameraX;
+                    const sy2 = e.y2 - game.cameraY;
+                    
+                    ctx.strokeStyle = e.color;
+                    ctx.lineWidth = e.width;
+                    ctx.globalAlpha = e.life / 0.08;
+                    ctx.beginPath();
+                    ctx.moveTo(sx1, sy1);
+                    ctx.lineTo(sx2, sy2);
+                    ctx.stroke();
+                    
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = e.width * 0.5;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+            });
+            
+            // Freeze aura
+            if (player.weapons.freeze) {
+                const w = weaponDefs.freeze;
+                const lv = player.weapons.freeze - 1;
+                ctx.beginPath();
+                ctx.arc(player.x - game.cameraX, player.y - game.cameraY, w.radius[lv], 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(100, 180, 255, 0.15)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(150, 220, 255, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            // Aura
+            if (player.weapons.aura) {
+                const w = weaponDefs.aura;
+                const lv = player.weapons.aura - 1;
+                const pulse = Math.sin(game.time * 5) * 0.1 + 0.9;
+                ctx.beginPath();
+                ctx.arc(player.x - game.cameraX, player.y - game.cameraY, w.radius[lv] * pulse, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(100, 255, 255, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            // Items
+            items.forEach(item => {
+                const sx = item.x - game.cameraX;
+                const sy = item.y - game.cameraY;
+                drawItem(item, sx, sy);
+            });
+            
+            // Gems
+            gems.forEach(g => {
+                const sx = g.x - game.cameraX;
+                const sy = g.y - game.cameraY;
+                
+                // Diamond shape
+                ctx.fillStyle = '#00ff88';
+                ctx.strokeStyle = '#00aa55';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(sx, sy - 8);
+                ctx.lineTo(sx + 6, sy);
+                ctx.lineTo(sx, sy + 8);
+                ctx.lineTo(sx - 6, sy);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Shine
+                ctx.fillStyle = '#aaffcc';
+                ctx.beginPath();
+                ctx.moveTo(sx - 2, sy - 4);
+                ctx.lineTo(sx + 1, sy - 4);
+                ctx.lineTo(sx - 1, sy);
+                ctx.closePath();
+                ctx.fill();
+            });
+            
+            // Particles
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x - game.cameraX, p.y - game.cameraY, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.min(1, p.life * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            
+            // Enemies
+            enemies.forEach(e => {
+                const sx = e.x - game.cameraX;
+                const sy = e.y - game.cameraY;
+                drawEnemy(e, sx, sy);
+            });
+            
+            // Projectiles
+            projectiles.forEach(p => {
+                const sx = p.x - game.cameraX;
+                const sy = p.y - game.cameraY;
+                
+                ctx.save();
+                if (p.boomerang) {
+                    ctx.translate(sx, sy);
+                    ctx.rotate(p.rotation);
+                    ctx.fillStyle = p.color;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-12, -3);
+                    ctx.lineTo(0, -8);
+                    ctx.lineTo(12, -3);
+                    ctx.lineTo(8, 0);
+                    ctx.lineTo(12, 3);
+                    ctx.lineTo(0, 8);
+                    ctx.lineTo(-12, 3);
+                    ctx.lineTo(-8, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (p.type === 'missile') {
+                    ctx.translate(sx, sy);
+                    ctx.rotate(Math.atan2(p.vy, p.vx));
+                    ctx.fillStyle = p.color;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(12, 0);
+                    ctx.lineTo(-8, -5);
+                    ctx.lineTo(-5, 0);
+                    ctx.lineTo(-8, 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Flame
+                    ctx.fillStyle = '#ff4400';
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -3);
+                    ctx.lineTo(-15, 0);
+                    ctx.lineTo(-5, 3);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (p.type === 'shuriken') {
+                    ctx.translate(sx, sy);
+                    ctx.rotate(game.time * 15);
+                    ctx.fillStyle = p.color;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for (let i = 0; i < 4; i++) {
+                        const angle = (i / 4) * Math.PI * 2;
+                        ctx.lineTo(Math.cos(angle) * 8, Math.sin(angle) * 8);
+                        ctx.lineTo(Math.cos(angle + Math.PI/4) * 3, Math.sin(angle + Math.PI/4) * 3);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (p.type === 'fireball') {
+                    // Fire glow
+                    const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.radius);
+                    gradient.addColorStop(0, '#ffff00');
+                    gradient.addColorStop(0.3, '#ff8800');
+                    gradient.addColorStop(0.7, '#ff4400');
+                    gradient.addColorStop(1, 'rgba(255,0,0,0)');
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                    
+                    // Trail
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(sx - p.vx * 0.03, sy - p.vy * 0.03);
+                    ctx.strokeStyle = p.color;
+                    ctx.lineWidth = p.radius * 0.6;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+            
+            // Orbit
+            if (player.weapons.orbit) {
+                const w = weaponDefs.orbit;
+                const lv = player.weapons.orbit - 1;
+                const count = w.count[lv];
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = orbitAngle + (i / count) * Math.PI * 2;
+                    const ox = player.x + Math.cos(angle) * w.radius[lv] - game.cameraX;
+                    const oy = player.y + Math.sin(angle) * w.radius[lv] - game.cameraY;
+                    
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, 14, 0, Math.PI * 2);
+                    const gradient = ctx.createRadialGradient(ox, oy, 0, ox, oy, 14);
+                    gradient.addColorStop(0, '#ffffff');
+                    gradient.addColorStop(0.5, w.color);
+                    gradient.addColorStop(1, '#440044');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+            }
+            
+            // Player
+            const px = player.x - game.cameraX;
+            const py = player.y - game.cameraY;
+            
+            if (player.invincible <= 0 || Math.floor(player.invincible * 10) % 2 === 0) {
+                drawPlayer(px, py);
+            }
+            
+            // Damage texts
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            damageTexts.forEach(d => {
+                ctx.fillStyle = d.color;
+                ctx.globalAlpha = d.life * 2;
+                ctx.fillText(d.text, d.x - game.cameraX, d.y - game.cameraY);
+            });
+            ctx.globalAlpha = 1;
+            
+            ctx.restore();
+        }
+        
+        function spawnEnemies() {
+            if (!game.running) return;
+            
+            const time = game.time;
+            let spawnRate = Math.max(300, 1500 - time * 15);
+            
+            let type;
+            const r = Math.random();
+            
+            if (time < 30) {
+                type = r < 0.5 ? 'zombie' : r < 0.8 ? 'bat' : 'slime';
+            } else if (time < 60) {
+                type = r < 0.3 ? 'zombie' : r < 0.5 ? 'skeleton' : r < 0.7 ? 'bat' : r < 0.9 ? 'ghost' : 'slime';
+            } else if (time < 120) {
+                type = r < 0.2 ? 'skeleton' : r < 0.4 ? 'ghost' : r < 0.6 ? 'demon' : r < 0.8 ? 'spider' : 'vampire';
+            } else {
+                type = r < 0.25 ? 'demon' : r < 0.45 ? 'vampire' : r < 0.65 ? 'dragon' : r < 0.85 ? 'spider' : 'ghost';
+            }
+            
+            if (Math.floor(time) > 0 && Math.floor(time) % 45 === 0 && !enemies.some(e => e.isBoss)) {
+                spawnBoss();
+            }
+            
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 500 + Math.random() * 200;
+            
+            const template = enemyTypes[type];
+            const timeScale = 1 + time / 45;
+            
+            enemies.push({
+                x: player.x + Math.cos(angle) * distance,
+                y: player.y + Math.sin(angle) * distance,
+                ...template,
+                hp: template.hp * timeScale,
+                maxHp: template.hp * timeScale,
+                damage: template.damage * (1 + time / 90),
+                slow: 1,
+                id: Date.now() + Math.random()
+            });
+            
+            setTimeout(spawnEnemies, spawnRate);
+        }
+        
+        function spawnBoss() {
+            document.getElementById('bossWarning').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('bossWarning').style.display = 'none';
+            }, 2000);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const template = enemyTypes.boss;
+            const timeScale = 1 + game.time / 25;
+            
+            enemies.push({
+                x: player.x + Math.cos(angle) * 450,
+                y: player.y + Math.sin(angle) * 450,
+                ...template,
+                hp: template.hp * timeScale,
+                maxHp: template.hp * timeScale,
+                damage: template.damage * (1 + game.time / 90),
+                slow: 1,
+                id: Date.now() + Math.random()
+            });
+        }
+        
+        function showLevelUp() {
+            game.paused = true;
+            
+            const screen = document.getElementById('levelUpScreen');
+            const choices = document.getElementById('weaponChoices');
+            choices.innerHTML = '';
+            
+            // knifeOnly 챌린지: 단검 업그레이드 또는 체력 회복만
+            if (game.challengeMode === 'knifeOnly') {
+                const w = weaponDefs.knife;
+                const wText = getWeaponText('knife');
+                const currentLevel = player.weapons.knife || 1;
+                
+                // 단검 업그레이드 선택지 (8레벨 미만일 때만)
+                if (currentLevel < 8) {
+                    const div = document.createElement('div');
+                    div.className = 'weapon-choice';
+                    div.innerHTML = `
+                        <div class="icon" style="color: ${w.color}">[${w.icon}]</div>
+                        <div class="name">${wText.name}</div>
+                        <div class="desc">${wText.desc}</div>
+                        <div class="level">Lv.${currentLevel} → Lv.${currentLevel + 1}</div>
+                    `;
+                    div.onclick = () => selectWeapon('knife');
+                    choices.appendChild(div);
+                }
+                
+                // 체력 회복 선택지
+                const healDiv = document.createElement('div');
+                healDiv.className = 'weapon-choice';
+                const healName = currentLang === 'ko' ? '체력 회복' : 'Heal HP';
+                const healDesc = currentLang === 'ko' ? '최대 체력의 10% 회복' : 'Recover 10% of max HP';
+                healDiv.innerHTML = `
+                    <div class="icon" style="color: #ff3366">[❤️]</div>
+                    <div class="name">${healName}</div>
+                    <div class="desc">${healDesc}</div>
+                    <div class="level">+${Math.floor(player.maxHp * 0.1)} HP</div>
+                `;
+                healDiv.onclick = () => selectHeal();
+                choices.appendChild(healDiv);
+                
+                screen.style.display = 'flex';
+                return;
+            }
+            
+            const available = Object.keys(weaponDefs);
+            const selected = [];
+            
+            const owned = Object.keys(player.weapons).filter(w => player.weapons[w] < 8);
+            const notOwned = available.filter(w => !player.weapons[w]);
+            
+            const pool = [...owned, ...owned, ...notOwned];
+            
+            while (selected.length < 4 && pool.length > 0) {
+                const idx = Math.floor(Math.random() * pool.length);
+                const w = pool[idx];
+                if (!selected.includes(w)) {
+                    const currentLevel = player.weapons[w] || 0;
+                    if (currentLevel < 8) {
+                        selected.push(w);
+                    }
+                }
+                pool.splice(idx, 1);
+            }
+            
+            selected.forEach(wKey => {
+                const w = weaponDefs[wKey];
+                const wText = getWeaponText(wKey);
+                const currentLevel = player.weapons[wKey] || 0;
+                
+                // Challenge mode: allWeapons는 바로 8레벨로
+                const newLevel = game.challengeMode === 'allWeapons' ? 8 : Math.min(currentLevel + 1, 8);
+                
+                const div = document.createElement('div');
+                div.className = 'weapon-choice';
+                div.innerHTML = `
+                    <div class="icon" style="color: ${w.color}">[${w.icon}]</div>
+                    <div class="name">${wText.name}</div>
+                    <div class="desc">${wText.desc}</div>
+                    <div class="level">${currentLevel > 0 ? `Lv.${currentLevel} → Lv.${newLevel}` : t('newWeapon')}</div>
+                `;
+                div.onclick = () => selectWeapon(wKey);
+                choices.appendChild(div);
+            });
+            
+            screen.style.display = 'flex';
+        }
+        
+        function selectHeal() {
+            const healAmount = player.maxHp * 0.1;
+            player.hp = Math.min(player.maxHp, player.hp + healAmount);
+            
+            damageTexts.push({
+                x: player.x, y: player.y - 40,
+                text: '+' + Math.floor(healAmount) + ' HP!',
+                life: 1.5,
+                color: '#00ff44'
+            });
+            
+            for (let j = 0; j < 10; j++) {
+                particles.push({
+                    x: player.x, y: player.y,
+                    vx: (Math.random() - 0.5) * 100,
+                    vy: (Math.random() - 0.5) * 100,
+                    life: 0.5,
+                    color: '#ff3366',
+                    radius: 5
+                });
+            }
+            
+            document.getElementById('levelUpScreen').style.display = 'none';
+            game.paused = false;
+            
+            // knifeOnly 챌린지 진행률 업데이트
+            if (game.challengeMode === 'knifeOnly') {
+                updateKnifeOnlyProgress();
+            }
+        }
+        
+        function selectWeapon(wKey) {
+            // Challenge mode: allWeapons는 바로 8레벨로
+            if (game.challengeMode === 'allWeapons') {
+                player.weapons[wKey] = 8;
+            } else {
+                player.weapons[wKey] = Math.min((player.weapons[wKey] || 0) + 1, 8);
+            }
+            
+            document.getElementById('levelUpScreen').style.display = 'none';
+            game.paused = false;
+            updateWeaponIcons();
+            
+            // Check challenge completion
+            if (game.challengeMode === 'allWeapons') {
+                checkChallengeComplete();
+            }
+            
+            // knifeOnly 챌린지 진행률 업데이트
+            if (game.challengeMode === 'knifeOnly') {
+                updateKnifeOnlyProgress();
+            }
+        }
+        
+        function updateKnifeOnlyProgress() {
+            const knifeLevel = document.getElementById('challengeKnifeLevel');
+            if (knifeLevel) {
+                knifeLevel.textContent = player.level;
+            }
+            document.getElementById('challengeProgressFill').style.width = `${Math.min(player.level, 100)}%`;
+            
+            // 레벨 100 도달 시 클리어
+            if (player.level >= 100 && !game.challengeComplete) {
+                game.challengeComplete = true;
+                game.paused = true;
+                
+                const timeLabel = t('clearTime');
+                const killsLabel = t('clearKills');
+                
+                document.getElementById('clearStats').innerHTML = `
+                    ${timeLabel}: ${Math.floor(game.time / 60)}m ${Math.floor(game.time % 60)}s<br>
+                    ${killsLabel}: ${game.kills}
+                `;
+                document.getElementById('challengeClearScreen').style.display = 'flex';
+            }
+        }
+        
+        function updateWeaponIcons() {
+            const container = document.getElementById('weaponIcons');
+            container.innerHTML = '';
+            
+            Object.entries(player.weapons).forEach(([key, level]) => {
+                const w = weaponDefs[key];
+                const div = document.createElement('div');
+                div.className = 'weapon-icon';
+                div.style.borderColor = w.color;
+                div.style.fontSize = '20px';
+                div.innerHTML = `${w.icon}<div class="weapon-level">${level}</div>`;
+                container.appendChild(div);
+            });
+        }
+        
+        function updateBuffIndicator() {
+            const container = document.getElementById('buffIndicator');
+            container.innerHTML = '';
+            
+            if (player.magnetTime > 0) {
+                const div = document.createElement('div');
+                div.className = 'buff-item';
+                div.style.borderColor = '#00aaff';
+                const magnetLabel = currentLang === 'ko' ? '자석' : 'MAGNET';
+                div.innerHTML = `<span style="font-size:18px">🧲</span><span style="color:#00aaff">${magnetLabel}</span><span class="buff-time">${Math.ceil(player.magnetTime)}s</span>`;
+                container.appendChild(div);
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('levelDisplay').textContent = player.level;
+            document.getElementById('killDisplay').textContent = game.kills;
+            
+            document.getElementById('hpFill').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+            document.getElementById('expFill').style.width = `${(player.exp / player.expToLevel) * 100}%`;
+            
+            const mins = Math.floor(game.time / 60);
+            const secs = Math.floor(game.time % 60);
+            document.getElementById('timer').textContent = 
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        
+        function gameOver() {
+            game.running = false;
+            
+            const timeLabel = t('timeSurvived');
+            const killsLabel = t('kills');
+            const levelLabel = t('finalLevel');
+            const weaponsLabel = t('weapons');
+            
+            document.getElementById('finalStats').innerHTML = `
+                ${timeLabel}: ${Math.floor(game.time / 60)}m ${Math.floor(game.time % 60)}s<br>
+                ${killsLabel}: ${game.kills}<br>
+                ${levelLabel}: ${player.level}<br>
+                ${weaponsLabel}: ${Object.keys(player.weapons).length}
+            `;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+
+
+        // 모바일에서 앱/탭이 백그라운드로 가면 자동 일시정지
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && game.running && !game.challengeComplete) {
+                game.paused = true;
+                document.getElementById('pauseScreen').style.display = 'flex';
+                resetJoystick();
+            }
+        });
+
+        window.addEventListener('contextmenu', e => {
+            if (e.target === canvas || e.target.closest('#mobileControls')) {
+                e.preventDefault();
+            }
+        });
+
+        // Initialize on load
+        updateAllTexts()
+        updateLangButtons();
+    </script>
+</body>
+</html>
