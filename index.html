@@ -1353,6 +1353,160 @@
             }
         }
 
+        /* ==================== ACCOUNT / LOGIN UI ONLY ==================== */
+        .account-panel {
+            position: fixed;
+            top: 72px;
+            left: 20px;
+            right: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 9px 7px 12px;
+            min-width: 0;
+            background: rgba(0,0,0,0.72);
+            border: 1px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.35);
+            backdrop-filter: none;
+            z-index: 105;
+            pointer-events: auto;
+        }
+        .account-info { min-width: 122px; }
+        #accountStatus {
+            color: #888;
+            font-size: 11px;
+            margin-bottom: 2px;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        #accountUsername {
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .account-stats {
+            display: flex;
+            gap: 8px;
+            color: #777;
+            font-size: 9px;
+            margin-top: 3px;
+        }
+        .account-stats b { color: #ffd700; font-size: 11px; }
+        .account-actions { display: flex; gap: 5px; }
+        .account-actions button {
+            border: 1px solid #444;
+            background: #22223a;
+            color: #fff;
+            padding: 7px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .account-actions button:hover { border-color: #7777cc; }
+
+        .overlay-panel {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.92);
+            z-index: 500;
+            padding: 20px;
+        }
+        .auth-card {
+            position: relative;
+            width: min(360px, 90vw);
+            background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+            border: 2px solid #4a4a8a;
+            border-radius: 15px;
+            padding: 24px 26px;
+            box-shadow: 0 0 30px rgba(74,74,138,.22);
+            color: #fff;
+            text-align: center;
+        }
+        .auth-card .auth-eyebrow { display: none; }
+        .auth-card h1 {
+            margin: 0 0 18px;
+            color: #ffd700;
+            font-size: 30px;
+            text-shadow: 0 0 18px rgba(255,215,0,.25);
+        }
+        .auth-card input {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
+            padding: 13px 14px;
+            border: 1px solid #4a4a6a;
+            border-radius: 9px;
+            background: #111122;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        .auth-card input:focus {
+            border-color: #8888dd;
+            box-shadow: 0 0 0 2px rgba(136,136,221,.12);
+        }
+        .auth-rule {
+            color: #999;
+            font-size: 11px;
+            margin: 8px 0 12px;
+        }
+        .auth-card > button:not(.panel-close) {
+            width: 100%;
+            margin-top: 8px;
+        }
+        #authSubmitBtn {
+            background: linear-gradient(135deg, #ff0044 0%, #cc0033 100%);
+            border: none;
+            color: #fff;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 2px 2px 4px rgba(0,0,0,.5);
+        }
+        #authSubmitBtn:hover { box-shadow: 0 0 24px rgba(255,0,68,.3); }
+        .auth-card .secondary-btn {
+            background: #22223a !important;
+            border: 1px solid #4a4a6a !important;
+            color: #fff !important;
+            font-size: 14px !important;
+            padding: 11px 16px !important;
+            border-radius: 9px !important;
+        }
+        .auth-message { min-height: 18px; margin-top: 10px; color: #ffbb55; font-size: 12px; line-height: 1.5; }
+        .panel-close {
+            position: absolute;
+            right: 10px;
+            top: 7px;
+            border: 0;
+            background: transparent;
+            color: #aaa;
+            font-size: 28px;
+            cursor: pointer;
+        }
+        @media (max-width: 700px) {
+            .account-panel {
+                top: max(70px, calc(env(safe-area-inset-top) + 62px));
+                left: 10px;
+                right: auto;
+                transform: none;
+                padding: 6px 7px 6px 10px;
+                border-radius: 9px;
+            }
+            .account-info { min-width: 125px; }
+            .account-panel #accountUsername { font-size: 12px; }
+            .account-stats { font-size: 8px; }
+            .account-actions button { padding: 6px 8px; font-size: 10px; }
+            .auth-card { padding: 22px 20px; }
+        }
+
     </style>
 </head>
 <body>
@@ -1432,7 +1586,7 @@
     
     <div id="accountPanel" class="account-panel">
         <div class="account-info">
-            <div id="accountStatus">로그인이 필요합니다</div>
+            <div id="accountStatus">GUEST MODE</div>
             <div id="accountUsername">-</div>
             <div class="account-stats">
                 <span><b id="accountScore">0</b> <span id="accountScoreLabel">영구 점수</span></span>
@@ -1452,6 +1606,7 @@
         </div>
         <h1 id="gameTitle">VAMPIRE SURVIVOR</h1>
         <p id="gameSubtitle">Survive against endless waves of monsters!</p>
+        <div class="home-score" id="homeScoreCard"><span id="homeScoreLabel">영구 점수</span><strong id="homeScoreValue">0</strong></div>
         <div class="mode-buttons">
             <button id="startBtn">START GAME</button>
             <button id="challengeBtn">CHALLENGE MODE</button>
@@ -1505,7 +1660,7 @@
     <div id="authScreen" class="overlay-panel">
         <div class="auth-card">
             <button id="authCloseBtn" class="panel-close" type="button">×</button>
-            <h1 id="authTitle">게임 로그인</h1>
+            <div class="auth-eyebrow">VAMPIRE // ACCOUNT</div><h1 id="authTitle">게임 로그인</h1>
             <input id="usernameInput" autocomplete="username" maxlength="16" placeholder="아이디">
             <input id="passwordInput" type="password" autocomplete="current-password" maxlength="72" placeholder="비밀번호">
             <div id="authRule" class="auth-rule">3~16자 영문/숫자/_ · 6자 이상</div>
@@ -1516,7 +1671,7 @@
     </div>
 
     <div id="settingsScreen" class="overlay-panel">
-        <div class="settings-card">
+        <div class="settings-card"><div class="auth-eyebrow">VAMPIRE // CONTROLS</div>
             <button id="settingsCloseBtn" class="panel-close" type="button">×</button>
             <h1 id="settingsTitle">조작 설정</h1>
             <div class="settings-section-title" id="joystickModeLabel">조이스틱 방식</div>
@@ -1589,6 +1744,7 @@
                 logout: '로그아웃',
                 accountGuest: '로그인이 필요합니다',
                 permanentScore: '영구 점수',
+                homeScoreLabel: '영구 점수',
                 bestSurvival: '최고 생존',
                 totalKills: '총 처치',
                 loginTitle: '게임 로그인',
@@ -1693,6 +1849,7 @@
                 logout: 'LOG OUT',
                 accountGuest: 'LOGIN REQUIRED',
                 permanentScore: 'Permanent Score',
+                homeScoreLabel: 'Permanent Score',
                 bestSurvival: 'Best Survival',
                 totalKills: 'Total Kills',
                 loginTitle: 'GAME LOGIN',
@@ -1825,6 +1982,8 @@
             document.getElementById('joystickDynamicBtn').textContent = t('joystickDynamic');
             document.getElementById('settingsHint').textContent = t('settingsHint');
             document.getElementById('mobileOnlyHint').textContent = t('mobileOnly');
+            const homeScoreLabel = document.getElementById('homeScoreLabel');
+            if (homeScoreLabel) homeScoreLabel.textContent = t('homeScoreLabel');
             updateAuthTexts();
             updateAccountUI();
             
@@ -2225,7 +2384,9 @@
         let authBusy = false;
 
         const USERNAME_RE = /^[A-Za-z0-9_]{3,16}$/;
-        const AUTH_EMAIL_DOMAIN = 'players.vampire-survivor.local';
+        // Supabase hosted Auth requires the password identity to be email or phone.
+        // The player only sees a username; this valid domain is used internally.
+        const AUTH_EMAIL_DOMAIN = 'rnytztedgowkoaibqtxg.supabase.co';
 
         function usernameToEmail(username) {
             return `${username.toLowerCase()}@${AUTH_EMAIL_DOMAIN}`;
@@ -2266,6 +2427,8 @@
                 loginBtn.style.display = 'inline-block';
                 logoutBtn.style.display = 'none';
             }
+            const homeScoreValue = document.getElementById('homeScoreValue');
+            if (homeScoreValue) homeScoreValue.textContent = Number(currentProfile?.permanent_score || 0).toLocaleString();
         }
 
         async function loadProfile() {
