@@ -1689,14 +1689,11 @@
         // ==================== Supabase ====================
         const SUPABASE_URL = 'https://rnytztedgowkoaibqtxg.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_I0CLu-mbGpzVaiOkgMJbTQ_Wv8Wswp8';
-        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-            auth: {
-                persistSession: true,
-                storage: window.sessionStorage,
-                autoRefreshToken: true,
-                detectSessionInUrl: false
-            }
-        });
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        // 이메일 Auth를 사용하지 않습니다.
+        // 로그인 세션 토큰은 현재 탭의 sessionStorage에만 보관합니다.
+        const GAME_SESSION_KEY = 'vampire_survivor_game_session';
 
         // ==================== 언어 설정 ====================
         let currentLang = 'ko';
@@ -1752,7 +1749,7 @@
                 username: '아이디',
                 password: '비밀번호',
                 usernameRule: '3~16자 영문/숫자/_',
-                passwordRule: '6자 이상',
+                passwordRule: '4자 이상',
                 loginBtn: '로그인',
                 signupBtn: '회원가입',
                 closeBtn: '닫기',
@@ -1857,7 +1854,7 @@
                 username: 'Username',
                 password: 'Password',
                 usernameRule: '3-16 letters/numbers/_',
-                passwordRule: '6+ characters',
+                passwordRule: '4+ characters',
                 loginBtn: 'LOGIN',
                 signupBtn: 'SIGN UP',
                 closeBtn: 'CLOSE',
@@ -2032,7 +2029,8 @@
             spawnTimer: 0,
             bossWarningTimer: 0,
             resultSaved: false,
-            runScore: 0
+            runScore: 0,
+            runId: null
         };
         
         // Player
@@ -2384,12 +2382,22 @@
         let authBusy = false;
 
         const USERNAME_RE = /^[A-Za-z0-9_]{3,16}$/;
-        // Supabase hosted Auth requires the password identity to be email or phone.
-        // The player only sees a username; this valid domain is used internally.
-        const AUTH_EMAIL_DOMAIN = 'rnytztedgowkoaibqtxg.supabase.co';
 
-        function usernameToEmail(username) {
-            return `${username.toLowerCase()}@${AUTH_EMAIL_DOMAIN}`;
+        function getGameToken() {
+            try {
+                return window.sessionStorage.getItem(GAME_SESSION_KEY) || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function setGameToken(token) {
+            try {
+                if (token) window.sessionStorage.setItem(GAME_SESSION_KEY, token);
+                else window.sessionStorage.removeItem(GAME_SESSION_KEY);
+            } catch (e) {
+                console.warn('Session storage unavailable:', e);
+            }
         }
 
         function formatTime(totalSeconds) {
@@ -2414,7 +2422,7 @@
 
             if (currentUser) {
                 status.textContent = t('authReady');
-                username.textContent = currentProfile?.username || currentUser.user_metadata?.username || '-';
+                username.textContent = currentUser.username || '-';
                 score.textContent = Number(currentProfile?.permanent_score || 0).toLocaleString();
                 best.textContent = formatTime(currentProfile?.best_survival || 0);
                 loginBtn.style.display = 'none';
@@ -2427,34 +2435,58 @@
                 loginBtn.style.display = 'inline-block';
                 logoutBtn.style.display = 'none';
             }
+
             const homeScoreValue = document.getElementById('homeScoreValue');
-            if (homeScoreValue) homeScoreValue.textContent = Number(currentProfile?.permanent_score || 0).toLocaleString();
+            if (homeScoreValue) {
+                homeScoreValue.textContent = Number(currentProfile?.permanent_score || 0).toLocaleString();
+            }
         }
 
         async function loadProfile() {
-            if (!currentUser) {
+            const token = getGameToken();
+            if (!token) {
+                currentUser = null;
                 currentProfile = null;
                 updateAccountUI();
-                return;
+                return false;
             }
 
-            const { data, error } = await sb
-                .from('profiles')
-                .select('id, username, permanent_score, best_survival, total_kills, total_boss_kills')
-                .eq('id', currentUser.id)
-                .maybeSingle();
-
+            const { data, error } = await sb.rpc('game_me', { p_token: token });
             if (error) {
-                console.error('Profile load failed:', error);
-                setAuthMessage(error.message, 'error');
-                return;
+                console.error('Session load failed:', error);
+                setGameToken('');
+                currentUser = null;
+                currentProfile = null;
+                updateAccountUI();
+                return false;
             }
 
-            currentProfile = data;
+            if (!data?.success) {
+                setGameToken('');
+                currentUser = null;
+                currentProfile = null;
+                updateAccountUI();
+                return false;
+            }
+
+            currentUser = {
+                id: data.account_id,
+                username: data.username
+            };
+            currentProfile = {
+                id: data.account_id,
+                username: data.username,
+                permanent_score: data.permanent_score || 0,
+                best_survival: data.best_survival || 0,
+                total_kills: data.total_kills || 0,
+                total_boss_kills: data.total_boss_kills || 0
+            };
             updateAccountUI();
+            return true;
         }
 
         function openAuth(mode = 'login') {
+            if (game.running) return;
             authMode = mode;
             document.getElementById('authScreen').style.display = 'flex';
             document.getElementById('usernameInput').value = '';
@@ -2485,10 +2517,12 @@
             document.getElementById('authRule').textContent = `${t('usernameRule')} · ${t('passwordRule')}`;
             document.getElementById('authSubmitBtn').textContent = t(authMode === 'login' ? 'loginBtn' : 'signupBtn');
             document.getElementById('authModeBtn').textContent = t(authMode === 'login' ? 'accountSignup' : 'accountLogin');
+            document.getElementById('passwordInput').autocomplete = authMode === 'login' ? 'current-password' : 'new-password';
         }
 
         async function submitAuth() {
             if (authBusy) return;
+
             const username = document.getElementById('usernameInput').value.trim();
             const password = document.getElementById('passwordInput').value;
 
@@ -2496,40 +2530,58 @@
                 setAuthMessage(t('usernameRule'), 'error');
                 return;
             }
-            if (password.length < 6) {
+            if (password.length < 4 || password.length > 72) {
                 setAuthMessage(t('passwordRule'), 'error');
                 return;
             }
 
             authBusy = true;
             document.getElementById('authSubmitBtn').disabled = true;
-            setAuthMessage('...');
+            setAuthMessage(currentLang === 'ko' ? '처리 중...' : 'Processing...');
 
             try {
-                const email = usernameToEmail(username);
-                if (authMode === 'signup') {
-                    const { data, error } = await sb.auth.signUp({
-                        email,
-                        password,
-                        options: { data: { username: username.toLowerCase() } }
-                    });
-                    if (error) throw error;
-                    if (!data.session) {
-                        setAuthMessage(currentLang === 'ko'
-                            ? 'Supabase의 Auth 설정에서 Confirm email을 꺼야 바로 로그인할 수 있습니다.'
-                            : 'Disable Confirm email in Supabase Auth so this game can sign in immediately.', 'error');
-                        return;
-                    }
-                    setAuthMessage(t('authReady'));
-                    document.getElementById('authScreen').style.display = 'none';
-                } else {
-                    const { error } = await sb.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    document.getElementById('authScreen').style.display = 'none';
+                const rpcName = authMode === 'signup' ? 'game_signup' : 'game_login';
+                const { data, error } = await sb.rpc(rpcName, {
+                    p_username: username,
+                    p_password: password
+                });
+
+                if (error) throw error;
+                if (!data?.success) {
+                    setAuthMessage(data?.error || (currentLang === 'ko' ? '처리에 실패했습니다.' : 'Request failed.'), 'error');
+                    return;
                 }
+
+                if (authMode === 'signup') {
+                    // 회원가입 후 바로 로그인합니다. 별도 이메일 인증이 없습니다.
+                    if (data.token) setGameToken(data.token);
+                } else {
+                    if (!data.token) {
+                        throw new Error(currentLang === 'ko' ? '로그인 토큰을 받지 못했습니다.' : 'Login token was not returned.');
+                    }
+                    setGameToken(data.token);
+                }
+
+                currentUser = {
+                    id: data.account_id,
+                    username: data.username
+                };
+                currentProfile = {
+                    id: data.account_id,
+                    username: data.username,
+                    permanent_score: data.permanent_score || 0,
+                    best_survival: data.best_survival || 0,
+                    total_kills: data.total_kills || 0,
+                    total_boss_kills: data.total_boss_kills || 0
+                };
+
+                updateAccountUI();
+                updateAuthTexts();
+                document.getElementById('authScreen').style.display = 'none';
+                setAuthMessage('');
             } catch (error) {
-                console.error('Auth failed:', error);
-                setAuthMessage(error.message || 'Authentication failed', 'error');
+                console.error('Game account auth failed:', error);
+                setAuthMessage(error?.message || (currentLang === 'ko' ? '로그인에 실패했습니다.' : 'Login failed.'), 'error');
             } finally {
                 authBusy = false;
                 document.getElementById('authSubmitBtn').disabled = false;
@@ -2538,28 +2590,23 @@
 
         async function logout() {
             if (game.running) return;
-            const { error } = await sb.auth.signOut();
-            if (error) {
-                console.error('Logout failed:', error);
-                return;
+
+            const token = getGameToken();
+            if (token) {
+                const { error } = await sb.rpc('game_logout', { p_token: token });
+                if (error) console.error('Logout failed:', error);
             }
+
+            setGameToken('');
+            currentUser = null;
+            currentProfile = null;
+            updateAccountUI();
         }
 
         async function initAuth() {
-            const { data, error } = await sb.auth.getSession();
-            if (error) console.error('Session load failed:', error);
-            currentUser = data?.session?.user || null;
             await loadProfile();
             updateAccountUI();
             updateAuthTexts();
-
-            sb.auth.onAuthStateChange((_event, session) => {
-                currentUser = session?.user || null;
-                currentProfile = null;
-                updateAccountUI();
-                // Avoid awaiting Supabase auth callbacks directly.
-                setTimeout(() => loadProfile(), 0);
-            });
         }
 
         function openSettings(fromPause = false) {
@@ -2573,21 +2620,23 @@
         }
 
         function requireLogin() {
-            if (currentUser) return true;
+            if (currentUser && getGameToken()) return true;
             openAuth('login');
             setAuthMessage(t('loginToPlay'));
             return false;
         }
 
         async function finishRunToSupabase() {
-            if (!currentUser || game.resultSaved) return null;
+            const token = getGameToken();
+            if (!token || !game.runId || game.resultSaved) return null;
             game.resultSaved = true;
 
-            const { data, error } = await sb.rpc('finish_run', {
+            const { data, error } = await sb.rpc('game_finish_run', {
+                p_token: token,
+                p_run_id: game.runId,
                 p_survival_seconds: Math.floor(game.time),
                 p_kills: Math.floor(game.kills),
-                p_boss_kills: Math.floor(game.bossKills),
-                p_challenge_clear: Boolean(game.challengeComplete)
+                p_boss_kills: Math.floor(game.bossKills)
             });
 
             if (error) {
@@ -2596,13 +2645,20 @@
                 return { error };
             }
 
+            if (!data?.success) {
+                console.error('Score save failed:', data?.error);
+                game.resultSaved = false;
+                return { error: new Error(data?.error || 'Score save failed') };
+            }
+
             currentProfile = {
                 ...(currentProfile || {}),
+                id: currentProfile?.id || currentUser?.id || data.account_id,
+                username: currentProfile?.username || currentUser?.username || data.username || '',
                 permanent_score: data?.permanent_score ?? currentProfile?.permanent_score ?? 0,
                 best_survival: data?.best_survival ?? currentProfile?.best_survival ?? 0,
                 total_kills: data?.total_kills ?? currentProfile?.total_kills ?? 0,
-                total_boss_kills: data?.total_boss_kills ?? currentProfile?.total_boss_kills ?? 0,
-                username: currentProfile?.username || currentUser.user_metadata?.username || ''
+                total_boss_kills: data?.total_boss_kills ?? currentProfile?.total_boss_kills ?? 0
             };
             updateAccountUI();
             return data;
@@ -2767,6 +2823,7 @@
             game.bossWarningTimer = 0;
             game.resultSaved = false;
             game.runScore = 0;
+            game.runId = crypto.randomUUID();
             
             player.x = 0;
             player.y = 0;
@@ -4628,12 +4685,11 @@
         }
         
         function calculateRunScore() {
-            // Score formula: survival + kills + boss kills. The server recalculates it too.
+            // 서버와 동일한 표시용 점수 공식
             return Math.max(0,
                 Math.floor(game.time) * 10 +
                 Math.floor(game.kills) * 2 +
-                Math.floor(game.bossKills) * 100 +
-                (game.challengeComplete ? 250 : 0)
+                Math.floor(game.bossKills) * 250
             );
         }
 
